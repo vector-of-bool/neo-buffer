@@ -1,6 +1,7 @@
 #pragma once
 
-#include <neo/base_buffer.hpp>
+#include <neo/byte_pointer.hpp>
+#include <neo/detail/single_buffer_iter.hpp>
 #include <neo/mutable_buffer.hpp>
 
 #include <cassert>

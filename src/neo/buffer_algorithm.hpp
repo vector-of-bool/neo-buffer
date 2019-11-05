@@ -26,11 +26,11 @@ template <mutable_buffer_sequence MutableSeq, const_buffer_sequence ConstSeq>
 constexpr std::size_t
 buffer_copy(const MutableSeq& dest, const ConstSeq& src, std::size_t max_copy) {
     auto        remaining_to_copy = max_copy;
-    std::size_t n_copied          = 0;
+    std::size_t total_copied      = 0;
     auto        dest_iter         = buffer_sequence_begin(dest);
     const auto  dest_stop         = buffer_sequence_end(dest);
     auto        src_iter          = buffer_sequence_begin(src);
-    const auto  src_stop          = buffer_sequence_end(dest);
+    const auto  src_stop          = buffer_sequence_end(src);
 
     std::size_t src_offset  = 0;
     std::size_t dest_offset = 0;
@@ -39,14 +39,15 @@ buffer_copy(const MutableSeq& dest, const ConstSeq& src, std::size_t max_copy) {
         const_buffer   src_buf  = *src_iter + src_offset;
         mutable_buffer dest_buf = *dest_iter + dest_offset;
 
-        const auto copy_now
+        const auto cur_copied
             = std::min(src_buf.size(), std::min(dest_buf.size(), remaining_to_copy));
-        std::memcpy(dest_buf.data(), src_buf.data(), copy_now);
-        n_copied += copy_now;
-        src_buf += n_copied;
-        dest_buf += n_copied;
-        src_offset += n_copied;
-        dest_offset += n_copied;
+        std::memcpy(dest_buf.data(), src_buf.data(), cur_copied);
+        total_copied += cur_copied;
+        remaining_to_copy -= cur_copied;
+        src_buf += cur_copied;
+        dest_buf += cur_copied;
+        src_offset += cur_copied;
+        dest_offset += cur_copied;
         if (src_buf.size() == 0) {
             ++src_iter;
             src_offset = 0;

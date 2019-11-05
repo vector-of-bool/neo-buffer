@@ -1,6 +1,6 @@
 #pragma once
 
-#include <neo/base_buffer.hpp>
+#include <neo/detail/single_buffer_iter.hpp>
 
 #include <cstddef>
 #include <iterator>
