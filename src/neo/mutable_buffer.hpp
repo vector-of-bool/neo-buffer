@@ -32,6 +32,14 @@ public:
     constexpr pointer   data() const noexcept { return _data; }
     constexpr pointer   data_end() const noexcept { return _data + size(); }
     constexpr size_type size() const noexcept { return _size; }
+
+    constexpr auto buffer_sequence_begin() const noexcept {
+        return detail::single_buffer_iter(*this);
+    }
+
+    constexpr auto buffer_sequence_end() const noexcept {
+        return detail::single_buffer_iter_sentinel();
+    }
 };
 
 inline constexpr mutable_buffer operator+(mutable_buffer            buf,
@@ -39,14 +47,6 @@ inline constexpr mutable_buffer operator+(mutable_buffer            buf,
     auto copy = buf;
     copy += s;
     return copy;
-}
-
-inline constexpr auto _impl_buffer_sequence_begin(mutable_buffer buf) noexcept {
-    return detail::single_buffer_iter(buf);
-}
-
-inline constexpr auto _impl_buffer_sequence_end(mutable_buffer) noexcept {
-    return detail::single_buffer_iter_sentinel();
 }
 
 }  // namespace neo

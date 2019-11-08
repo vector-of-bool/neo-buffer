@@ -43,12 +43,6 @@ constexpr inline struct _buffer_sequence_begin_fn {
     { return t.buffer_sequence_begin(); }
 
     template <typename T>
-    decltype(auto) operator()(T&& t) const requires requires {
-        _impl_buffer_sequence_begin(t);
-    }
-    { return _impl_buffer_sequence_begin(t); }
-
-    template <typename T>
     decltype(auto) operator()(T&& t) const requires requires(T seq) {
         seq.begin();
         const_buffer_sequence_iterator<decltype(seq.begin())>;
@@ -68,12 +62,6 @@ constexpr inline struct _buffer_sequence_end_fn {
         t.buffer_sequence_end();
     }
     { return t.buffer_sequence_end(); }
-
-    template <typename T>
-    decltype(auto) operator()(T&& t) const requires requires {
-        _impl_buffer_sequence_end(t);
-    }
-    { return _impl_buffer_sequence_end(t); }
 
     template <typename T>
     decltype(auto) operator()(T&& t) const requires requires(T seq) {

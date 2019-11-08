@@ -46,20 +46,20 @@ public:
         _size -= s;
         return *this;
     }
+
+    constexpr auto buffer_sequence_begin() const noexcept {
+        return detail::single_buffer_iter(*this);
+    }
+
+    constexpr auto buffer_sequence_end() const noexcept {
+        return detail::single_buffer_iter_sentinel();
+    }
 };
 
 inline constexpr const_buffer operator+(const_buffer buf, const_buffer::size_type s) noexcept {
     auto copy = buf;
     copy += s;
     return copy;
-}
-
-inline constexpr auto _impl_buffer_sequence_begin(const_buffer buf) noexcept {
-    return detail::single_buffer_iter(buf);
-}
-
-inline constexpr auto _impl_buffer_sequence_end(const_buffer) noexcept {
-    return detail::single_buffer_iter_sentinel();
 }
 
 }  // namespace neo
