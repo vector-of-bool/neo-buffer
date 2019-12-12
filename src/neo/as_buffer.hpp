@@ -15,7 +15,7 @@
 
 namespace neo {
 
-inline namespace cpo {
+namespace cpo {
 
 inline constexpr struct as_buffer_fn {
     /**
@@ -179,6 +179,8 @@ requires std::is_trivial_v<Elem> && !std::is_const_v<Elem> //
 } as_buffer;
 
 }  // namespace cpo
+
+using namespace cpo;
 
 // clang-format off
 template <typename T>

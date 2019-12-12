@@ -26,7 +26,7 @@ concept mutable_buffer_sequence_iterator =
     };
 // clang-format on
 
-inline namespace cpo {
+namespace cpo {
 
 constexpr inline struct _buffer_sequence_begin_fn {
     template <typename T>
@@ -71,5 +71,7 @@ constexpr inline struct _buffer_sequence_end_fn {
 } buffer_sequence_end;
 
 }  // namespace cpo
+
+using namespace cpo;
 
 }  // namespace neo
