@@ -33,11 +33,11 @@ public:
     constexpr pointer   data_end() const noexcept { return _data + size(); }
     constexpr size_type size() const noexcept { return _size; }
 
-    constexpr auto buffer_sequence_begin() const noexcept {
-        return detail::single_buffer_iter(*this);
+    friend constexpr auto buffer_sequence_begin(mutable_buffer mb) noexcept {
+        return detail::single_buffer_iter(mb);
     }
 
-    constexpr auto buffer_sequence_end() const noexcept {
+    friend constexpr auto buffer_sequence_end(mutable_buffer) noexcept {
         return detail::single_buffer_iter_sentinel();
     }
 };

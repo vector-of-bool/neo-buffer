@@ -3,31 +3,30 @@
 #include <neo/const_buffer.hpp>
 #include <neo/mutable_buffer.hpp>
 
+#include <neo/concepts.hpp>
+
+#include <iterator>
 #include <type_traits>
 #include <utility>
-#include <iterator>
-
-#ifndef NEO_CONCEPT
-#if defined(__GNUC__) && __GNUC__ < 9
-#define NEO_CONCEPT concept bool
-#else
-#define NEO_CONCEPT concept
-#endif
-#endif
 
 namespace neo {
 
+// clang-format off
 template <typename T>
-NEO_CONCEPT const_buffer_sequence_iterator = requires(T iter) {
-    typename std::iterator_traits<T>::value_type;
-    std::is_convertible_v<typename std::iterator_traits<T>::value_type, const_buffer>;
+concept const_buffer_sequence_iterator = requires(T iter) {
+    ++iter;
+    { *iter } -> convertible_to<const_buffer>;
 };
 
 template <typename T>
-NEO_CONCEPT mutable_buffer_sequence_iterator
-    = const_buffer_sequence_iterator<T>&& requires(T iter) {
-    std::is_convertible_v<typename std::iterator_traits<T>::value_type, mutable_buffer>;
-};
+concept mutable_buffer_sequence_iterator =
+    const_buffer_sequence_iterator<T> &&
+    requires(T iter) {
+        { *iter } -> convertible_to<mutable_buffer>;
+    };
+// clang-format on
+
+inline namespace cpo {
 
 constexpr inline struct _buffer_sequence_begin_fn {
     template <typename T>
@@ -70,5 +69,7 @@ constexpr inline struct _buffer_sequence_end_fn {
     }
     { return t.end(); }
 } buffer_sequence_end;
+
+}  // namespace cpo
 
 }  // namespace neo

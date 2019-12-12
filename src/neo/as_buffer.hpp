@@ -5,6 +5,8 @@
 #include <neo/const_buffer.hpp>
 #include <neo/mutable_buffer.hpp>
 
+#include <neo/concepts.hpp>
+
 #include <array>
 #include <string>
 #include <string_view>
@@ -13,13 +15,15 @@
 
 namespace neo {
 
+inline namespace cpo {
+
 inline constexpr struct as_buffer_fn {
     /**
      * Copy an existing mutable_buffer
      */
     constexpr mutable_buffer operator()(const mutable_buffer& b) const noexcept { return b; }
-    constexpr mutable_buffer operator()(const mutable_buffer& b, mutable_buffer::size_type s) const
-        noexcept {
+    constexpr mutable_buffer operator()(const mutable_buffer&     b,
+                                        mutable_buffer::size_type s) const noexcept {
         return mutable_buffer(b.data(), std::min(s, b.size()));
     }
 
@@ -27,8 +31,8 @@ inline constexpr struct as_buffer_fn {
      * Copy an existing const_buffer
      */
     constexpr const_buffer operator()(const const_buffer& b) const noexcept { return b; }
-    constexpr const_buffer operator()(const const_buffer& b, const_buffer::size_type s) const
-        noexcept {
+    constexpr const_buffer operator()(const const_buffer&     b,
+                                      const_buffer::size_type s) const noexcept {
         return const_buffer(b.data(), std::min(s, b.size()));
     }
 
@@ -38,9 +42,8 @@ inline constexpr struct as_buffer_fn {
      */
     template <typename Trivial, std::size_t N>
     requires std::is_trivial_v<Trivial>  //
-        constexpr mutable_buffer operator()(Trivial (&item)[N],
-                                            std::size_t max_size = sizeof(Trivial[N])) const
-        noexcept {
+        constexpr mutable_buffer
+        operator()(Trivial (&item)[N], std::size_t max_size = sizeof(Trivial[N])) const noexcept {
         auto min_size = std::min(sizeof(item), max_size);
         return mutable_buffer(byte_pointer(std::addressof(item)), min_size);
     }
@@ -52,8 +55,8 @@ inline constexpr struct as_buffer_fn {
               std::size_t N>
     requires std::is_trivial_v<Trivial>  //
         constexpr const_buffer operator()(const Trivial (&item)[N],
-                                          std::size_t max_size = sizeof(Trivial[N])) const
-        noexcept {
+                                          std::size_t max_size
+                                          = sizeof(Trivial[N])) const noexcept {
         auto min_size = std::min(sizeof(item), max_size);
         return const_buffer(byte_pointer(std::addressof(item)), min_size);
     }
@@ -76,8 +79,8 @@ requires std::is_trivial_v<Elem> && !std::is_const_v<Elem> //
     template <typename Elem, std::size_t N>
     requires std::is_trivial_v<Elem>  //
         constexpr const_buffer operator()(const std::array<Elem, N>& arr,
-                                          std::size_t max_size = sizeof(std::array<Elem, N>)) const
-        noexcept {
+                                          std::size_t                max_size
+                                          = sizeof(std::array<Elem, N>)) const noexcept {
         return const_buffer(byte_pointer(arr.data()),
                             std::min(max_size, arr.size() * sizeof(Elem)));
     }
@@ -103,8 +106,8 @@ requires std::is_trivial_v<Elem> && !std::is_const_v<Elem> //
     }
 
     template <typename Char, typename Traits, typename Alloc>
-    constexpr mutable_buffer operator()(std::basic_string<Char, Traits, Alloc>& str) const
-        noexcept {
+    constexpr mutable_buffer
+    operator()(std::basic_string<Char, Traits, Alloc>& str) const noexcept {
         return (*this)(str, str.size() * sizeof(Char));
     }
 
@@ -119,8 +122,8 @@ requires std::is_trivial_v<Elem> && !std::is_const_v<Elem> //
     }
 
     template <typename Char, typename Traits, typename Alloc>
-    constexpr const_buffer operator()(const std::basic_string<Char, Traits, Alloc>& str) const
-        noexcept {
+    constexpr const_buffer
+    operator()(const std::basic_string<Char, Traits, Alloc>& str) const noexcept {
         return (*this)(str, str.size() * sizeof(Char));
     }
 
@@ -170,24 +173,25 @@ requires std::is_trivial_v<Elem> && !std::is_const_v<Elem> //
 
     template <typename Elem, typename Alloc>
     requires std::is_trivial_v<Elem>  //
-        constexpr const_buffer operator()(const std::vector<Elem, Alloc>& vec) const noexcept {
+    constexpr const_buffer operator()(const std::vector<Elem, Alloc>& vec) const noexcept {
         return (*this)(vec, vec.size() * sizeof(Elem));
     }
 } as_buffer;
 
+}  // namespace cpo
+
+// clang-format off
 template <typename T>
-NEO_CONCEPT can_view_as_const_buffer = requires(T buf, const T cbuf) {
-    { as_buffer(buf) }
-    ->neo::const_buffer;
-    { as_buffer(cbuf) }
-    ->neo::const_buffer;
+concept can_view_as_const_buffer = requires(T buf, const T cbuf) {
+    { as_buffer(buf) } -> neo::same_as<neo::const_buffer>;
+    { as_buffer(cbuf) } -> neo::same_as<neo::const_buffer>;
 };
 
 template <typename T>
-NEO_CONCEPT can_view_as_mutable_buffer = requires(T buf) {
+concept can_view_as_mutable_buffer = requires(T buf) {
     can_view_as_const_buffer<T>;
-    { as_buffer(buf) }
-    ->neo::const_buffer;
+    { as_buffer(buf) } -> neo::same_as<neo::const_buffer>;
 };
+// clang-format on
 
 }  // namespace neo

@@ -1,6 +1,6 @@
-#include <catch2/catch.hpp>
-
 #include <neo/byte_pointer.hpp>
+
+#include <catch2/catch.hpp>
 
 TEST_CASE("Byte pointer") {
     int  i     = 0;

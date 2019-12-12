@@ -22,6 +22,14 @@ private:
     pointer   _data = nullptr;
     size_type _size = 0;
 
+    friend constexpr auto buffer_sequence_begin(const_buffer cb) noexcept {
+        return detail::single_buffer_iter(cb);
+    }
+
+    friend constexpr auto buffer_sequence_end(const_buffer) noexcept {
+        return detail::single_buffer_iter_sentinel();
+    }
+
 public:
     constexpr const_buffer() noexcept = default;
     constexpr const_buffer(pointer ptr, size_type size) noexcept
@@ -45,14 +53,6 @@ public:
         _data += s;
         _size -= s;
         return *this;
-    }
-
-    constexpr auto buffer_sequence_begin() const noexcept {
-        return detail::single_buffer_iter(*this);
-    }
-
-    constexpr auto buffer_sequence_end() const noexcept {
-        return detail::single_buffer_iter_sentinel();
     }
 };
 

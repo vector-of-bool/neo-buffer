@@ -1,6 +1,6 @@
-#include <catch2/catch.hpp>
+#include <neo/as_buffer.hpp>
 
-#include <neo/buffer.hpp>
+#include <catch2/catch.hpp>
 
 #include <neo/buffer_algorithm.hpp>
 
