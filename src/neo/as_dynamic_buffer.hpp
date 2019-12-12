@@ -48,7 +48,7 @@ public:
     void consume(std::size_t n) noexcept { string().erase(0, n); }
 };
 
-namespace cpo {
+inline namespace cpo {
 
 inline constexpr struct as_dynamic_buffer_fn {
     template <typename T>
@@ -70,7 +70,5 @@ inline constexpr struct as_dynamic_buffer_fn {
 
 } as_dynamic_buffer;
 }  // namespace cpo
-
-using namespace cpo;
 
 }  // namespace neo

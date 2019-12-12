@@ -26,52 +26,55 @@ concept mutable_buffer_sequence_iterator =
     };
 // clang-format on
 
-namespace cpo {
+inline namespace cpo {
+
+template <typename T>
+concept has_nonmember_bufseq_begin = requires(T t) {
+    { buffer_sequence_begin(t) } -> const_buffer_sequence_iterator;
+};
+
+template <typename T>
+concept has_member_bufseq_begin = requires(T t) {
+    { t.buffer_sequence_begin() } -> const_buffer_sequence_iterator;
+};
+
+template <typename T>
+concept has_member_begin_bufseq = requires(T t) {
+    { t.begin() } -> const_buffer_sequence_iterator;
+};
 
 constexpr inline struct _buffer_sequence_begin_fn {
-    template <typename T>
-    decltype(auto) operator()(T&& t) const requires requires {
-        buffer_sequence_begin(t);
-    }
-    { return buffer_sequence_begin(t); }
+    template <has_nonmember_bufseq_begin T> decltype(auto) operator()(T&& t) const { return buffer_sequence_begin(t); }
+    template <has_member_bufseq_begin T> decltype(auto) operator()(T&& t) const { return t.buffer_sequence_begin(); }
 
-    template <typename T>
-    decltype(auto) operator()(T&& t) const requires requires {
-        t.buffer_sequence_begin();
-    }
-    { return t.buffer_sequence_begin(); }
-
-    template <typename T>
-    decltype(auto) operator()(T&& t) const requires requires(T seq) {
-        seq.begin();
-        const_buffer_sequence_iterator<decltype(seq.begin())>;
-    }
-    { return t.begin(); }
+    template <has_member_begin_bufseq T> decltype(auto) operator()(T&& t) const { return t.begin(); }
 } buffer_sequence_begin;
 
+template <typename T>
+concept has_nonmember_bufseq_end = requires(T t) {
+    buffer_sequence_end(t);
+    { buffer_sequence_begin(t) != buffer_sequence_end(t) } -> neo::simple_boolean;
+};
+
+template <typename T>
+concept has_member_bufseq_end = requires(T t) {
+    t.buffer_sequence_end();
+    { buffer_sequence_begin(t) != t.buffer_sequence_end() } -> neo::simple_boolean;
+};
+
+template <typename T>
+concept has_member_end_bufseq = requires(T t) {
+    t.end();
+    { buffer_sequence_begin(t) != t.end() } -> neo::simple_boolean;
+};
+
 constexpr inline struct _buffer_sequence_end_fn {
-    template <typename T>
-    decltype(auto) operator()(T&& t) const requires requires {
-        buffer_sequence_end(t);
-    }
-    { return buffer_sequence_end(t); }
+    template <has_nonmember_bufseq_end T> decltype(auto) operator()(T&& t) const { return buffer_sequence_end(t); }
+    template <has_member_bufseq_end T> decltype(auto) operator()(T&& t) const { return t.buffer_sequence_end(); }
 
-    template <typename T>
-    decltype(auto) operator()(T&& t) const requires requires {
-        t.buffer_sequence_end();
-    }
-    { return t.buffer_sequence_end(); }
-
-    template <typename T>
-    decltype(auto) operator()(T&& t) const requires requires(T seq) {
-        seq.end();
-        bool(buffer_sequence_begin(seq) == seq.end());
-    }
-    { return t.end(); }
+    template <has_member_end_bufseq T> decltype(auto) operator()(T&& t) const { return t.end(); }
 } buffer_sequence_end;
 
 }  // namespace cpo
-
-using namespace cpo;
 
 }  // namespace neo
