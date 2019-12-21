@@ -1,3 +1,4 @@
 Name: buffer
 
 Uses: neo/concepts
+Uses: neo/fun

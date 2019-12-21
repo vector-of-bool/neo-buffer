@@ -3,4 +3,5 @@ Namespace: neo
 Version: 0.1.0
 Test-Driver: Catch-Main
 
-Depends: neo-concepts ~0.1.0
+Depends: neo-concepts ~0.2.0
+Depends: neo-fun ~0.1.0
