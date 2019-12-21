@@ -3,6 +3,8 @@
 #include <neo/as_buffer.hpp>
 #include <neo/dynamic_buffer.hpp>
 
+#include <neo/fwd.hpp>
+
 #include <string>
 #include <vector>
 
@@ -48,23 +50,49 @@ public:
     void consume(std::size_t n) noexcept { string().erase(0, n); }
 };
 
+namespace detail {
+
+// clang-format off
+template <typename T>
+concept has_member_as_dynbuf = requires(T t) {
+    { NEO_FWD(t).as_dynamic_buffer() } -> dynamic_buffer;
+};
+
+template <typename T>
+concept has_nonmember_as_dynbuf = requires(T t) {
+    { as_dynamic_buffer(NEO_FWD(t)) } -> dynamic_buffer;
+};
+
+template <typename T>
+concept has_both_as_dynbuf =
+    has_member_as_dynbuf<T> &&
+    has_nonmember_as_dynbuf<T>;
+// clang-format on
+
+}  // namespace detail
+
 inline namespace cpo {
 
 inline constexpr struct as_dynamic_buffer_fn {
-    template <typename T>
-    auto operator()(T&& what) const requires requires {
-        what.as_dynamic_buffer()->dynamic_buffer;
+    template <detail::has_member_as_dynbuf T>
+    decltype(auto) operator()(T&& what) const
+        noexcept(noexcept(NEO_FWD(what).as_dynamic_buffer())) {
+        return NEO_FWD(what).as_dynamic_buffer();
     }
-    { return what.as_dynamic_buffer(); }
 
-    template <typename T>
-    auto operator()(T&& what) const requires requires {
-        as_dynamic_buffer(what)->dynamic_buffer;
+    template <detail::has_nonmember_as_dynbuf T>
+    decltype(auto) operator()(T&& what) const noexcept(noexcept(as_dynamic_buffer(NEO_FWD(what)))) {
+        return as_dynamic_buffer(NEO_FWD(what));
     }
-    { return as_dynamic_buffer(what); }
+
+    template <detail::has_both_as_dynbuf T>
+    decltype(auto) operator()(T&& what) const
+        noexcept(noexcept(NEO_FWD(what).as_dynamic_buffer())) {
+        return NEO_FWD(what).as_dynamic_buffer();
+    }
 
     template <typename Char, typename Traits, typename Alloc>
-    auto operator()(std::basic_string<Char, Traits, Alloc>& string) const noexcept {
+    decltype(auto) operator()(std::basic_string<Char, Traits, Alloc>& string) const noexcept {
         return dynamic_string_buffer(string);
     }
 

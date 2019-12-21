@@ -12,6 +12,15 @@ struct my_simple_struct {
     int b;
 };
 
+struct mine_with_as_buffer_member {
+    int a;
+    int b;
+
+    neo::mutable_buffer as_buffer() noexcept {
+        return neo::mutable_buffer(neo::byte_pointer(this), sizeof *this);
+    }
+};
+
 TEST_CASE("From mutable_buffer") {
     int  i    = 0;
     auto buf  = neo::mutable_buffer(neo::byte_pointer(&i), sizeof i);
@@ -136,4 +145,12 @@ TEST_CASE("mutable_buffer from std::vector") {
 TEST_CASE("const_buffer from std::vector") {
     const std::vector<int> vec = {32, 44, 11};
     array_checks<neo::const_buffer>(vec);
+}
+
+TEST_CASE("Member as_buffer") {
+    mine_with_as_buffer_member m;
+    m.a = 32;
+    m.b = 44;
+    auto mb = neo::as_buffer(m);
+    CHECK(mb.size() == sizeof m);
 }
