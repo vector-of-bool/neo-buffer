@@ -12,19 +12,39 @@
 
 namespace neo {
 
+struct proto_const_buffer_sequence_iterator {
+    proto_const_buffer_sequence_iterator() = delete;
+    proto_const_buffer_sequence_iterator* operator++();
+    const_buffer                          operator*() const;
+
+    bool operator!=(proto_const_buffer_sequence_iterator) const noexcept;
+};
+
+struct proto_mutable_buffer_sequence_iterator {
+    proto_mutable_buffer_sequence_iterator() = delete;
+    proto_mutable_buffer_sequence_iterator* operator++();
+    mutable_buffer                          operator*() const;
+
+    bool operator!=(proto_mutable_buffer_sequence_iterator) const noexcept;
+};
+
 // clang-format off
 template <typename T>
-concept const_buffer_sequence_iterator = requires(T iter) {
+concept const_buffer_sequence_iterator = requires(T iter, const T citer) {
     ++iter;
-    { *iter } -> convertible_to<const_buffer>;
+    { *citer } -> convertible_to<const_buffer>;
 };
+
+static_assert(const_buffer_sequence_iterator<proto_const_buffer_sequence_iterator>);
 
 template <typename T>
 concept mutable_buffer_sequence_iterator =
     const_buffer_sequence_iterator<T> &&
-    requires(T iter) {
-        { *iter } -> convertible_to<mutable_buffer>;
+    requires(const T citer) {
+        { *citer } -> convertible_to<mutable_buffer>;
     };
+
+static_assert(mutable_buffer_sequence_iterator<proto_mutable_buffer_sequence_iterator>);
 // clang-format on
 
 namespace detail {

@@ -10,6 +10,16 @@
 
 namespace neo {
 
+struct proto_const_buffer_sequence {
+    proto_const_buffer_sequence_iterator buffer_sequence_end();
+    proto_const_buffer_sequence_iterator buffer_sequence_begin();
+};
+
+struct proto_mutable_buffer_sequence {
+    proto_mutable_buffer_sequence_iterator buffer_sequence_begin();
+    proto_mutable_buffer_sequence_iterator buffer_sequence_end();
+};
+
 // clang-format off
 
 template <typename T>
@@ -22,6 +32,8 @@ concept const_buffer_sequence = requires(T seq) {
     { neo::buffer_sequence_begin(seq) != neo::buffer_sequence_end(seq) } -> neo::simple_boolean;
 };
 
+static_assert(const_buffer_sequence<proto_const_buffer_sequence>);
+
 template <typename T>
 concept mutable_buffer_sequence =
     // Any mutable buffer sequence is also a const sequence:
@@ -30,6 +42,8 @@ concept mutable_buffer_sequence =
     && requires(T seq) {
         { neo::buffer_sequence_begin(seq) } -> mutable_buffer_sequence_iterator;
     };
+
+static_assert(mutable_buffer_sequence<proto_mutable_buffer_sequence>);
 
 // clang-format on
 
