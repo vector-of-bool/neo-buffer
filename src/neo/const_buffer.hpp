@@ -1,6 +1,7 @@
 #pragma once
 
-#include <neo/base_buffer.hpp>
+#include <neo/byte_pointer.hpp>
+#include <neo/detail/single_buffer_iter.hpp>
 #include <neo/mutable_buffer.hpp>
 
 #include <cassert>
@@ -20,6 +21,14 @@ public:
 private:
     pointer   _data = nullptr;
     size_type _size = 0;
+
+    friend constexpr auto buffer_sequence_begin(const_buffer cb) noexcept {
+        return detail::single_buffer_iter(cb);
+    }
+
+    friend constexpr auto buffer_sequence_end(const_buffer) noexcept {
+        return detail::single_buffer_iter_sentinel();
+    }
 
 public:
     constexpr const_buffer() noexcept = default;
@@ -51,14 +60,6 @@ inline constexpr const_buffer operator+(const_buffer buf, const_buffer::size_typ
     auto copy = buf;
     copy += s;
     return copy;
-}
-
-inline constexpr auto _impl_buffer_sequence_begin(const_buffer buf) noexcept {
-    return detail::single_buffer_iter(buf);
-}
-
-inline constexpr auto _impl_buffer_sequence_end(const_buffer) noexcept {
-    return detail::single_buffer_iter_sentinel();
 }
 
 }  // namespace neo

@@ -1,0 +1,5 @@
+Compiler-ID: GNU
+C++-Version: C++17
+C-Compiler: gcc-9
+C++-Compiler: g++-9
+Flags: -fconcepts

@@ -1,9 +1,10 @@
-#include <neo/buffer.test.hpp>
 #include <neo/const_buffer.hpp>
+
+#include <catch2/catch.hpp>
 
 #include <iostream>
 
-int main() {
+TEST_CASE("Simple") {
     neo::const_buffer buf;
     CHECK(buf.size() == 0);
 
