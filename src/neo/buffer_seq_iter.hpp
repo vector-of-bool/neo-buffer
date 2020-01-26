@@ -75,7 +75,7 @@ concept has_nonmember_begin_bufseq = requires(T t) {
 
 inline namespace cpo {
 
-constexpr inline struct _buffer_sequence_begin_fn {
+struct _buffer_sequence_begin_fn {
     template <detail::has_nonmember_bufseq_begin T>
     decltype(auto) operator()(T&& t) const noexcept(noexcept(buffer_sequence_begin(NEO_FWD(t)))) {
         return buffer_sequence_begin(NEO_FWD(t));
@@ -99,16 +99,20 @@ constexpr inline struct _buffer_sequence_begin_fn {
     // decltype(auto) operator()(T&& t) const noexcept(noexcept(begin(NEO_FWD(t)))) {
     //     return begin(NEO_FWD(t));
     // }
-} _buffer_sequence_begin_;
+};
 
-// XXX: The function template below is a work-around for a bug in MSVC <16.5,
-// and should be removed when 16.5 is available and can successfully compile
-// this code. The above function object should take its place.
+#ifdef _MSC_VER
+// XXX: The is a work-around for a bug in MSVC <16.5, and should be removed
+// when 16.5 is available and can successfully compile this code.
+constexpr inline _buffer_sequence_begin_fn _buffer_sequence_begin_;
 
 template <typename T>
 auto buffer_sequence_begin(T&& t) -> decltype(_buffer_sequence_begin_(NEO_FWD(t))) {
     return _buffer_sequence_begin_(NEO_FWD(t));
 }
+#else
+constexpr inline _buffer_sequence_begin_fn buffer_sequence_begin;
+#endif
 
 }  // namespace cpo
 
@@ -139,7 +143,7 @@ concept has_member_end_bufseq = requires(T t) {
 
 inline namespace cpo {
 
-constexpr inline struct _buffer_sequence_end_fn {
+struct _buffer_sequence_end_fn {
     template <detail::has_nonmember_bufseq_end T>
     decltype(auto) operator()(T&& t) const {
         return buffer_sequence_end(t);
@@ -153,16 +157,20 @@ constexpr inline struct _buffer_sequence_end_fn {
     decltype(auto) operator()(T&& t) const {
         return t.end();
     }
-} _buffer_sequence_end_;
+};
 
-// XXX: The function template below is a work-around for a bug in MSVC <16.5,
-// and should be removed when 16.5 is available and can successfully compile
-// this code. The above function object should take its place.
+#ifdef _MSC_VER
+// XXX: The is a work-around for a bug in MSVC <16.5, and should be removed
+// when 16.5 is available and can successfully compile this code.
+constexpr inline _buffer_sequence_end_fn _buffer_sequence_end_;
 
 template <typename T>
 auto buffer_sequence_end(T&& t) -> decltype(_buffer_sequence_end_(NEO_FWD(t))) {
     return _buffer_sequence_end_(NEO_FWD(t));
 }
+#else
+constexpr inline _buffer_sequence_end_fn   buffer_sequence_end;
+#endif
 
 }  // namespace cpo
 
