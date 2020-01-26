@@ -99,7 +99,16 @@ constexpr inline struct _buffer_sequence_begin_fn {
     // decltype(auto) operator()(T&& t) const noexcept(noexcept(begin(NEO_FWD(t)))) {
     //     return begin(NEO_FWD(t));
     // }
-} buffer_sequence_begin;
+} _buffer_sequence_begin_;
+
+// XXX: The function template below is a work-around for a bug in MSVC <16.5,
+// and should be removed when 16.5 is available and can successfully compile
+// this code. The above function object should take its place.
+
+template <typename T>
+auto buffer_sequence_begin(T&& t) -> decltype(_buffer_sequence_begin_(NEO_FWD(t))) {
+    return _buffer_sequence_begin_(NEO_FWD(t));
+}
 
 }  // namespace cpo
 
@@ -144,7 +153,16 @@ constexpr inline struct _buffer_sequence_end_fn {
     decltype(auto) operator()(T&& t) const {
         return t.end();
     }
-} buffer_sequence_end;
+} _buffer_sequence_end_;
+
+// XXX: The function template below is a work-around for a bug in MSVC <16.5,
+// and should be removed when 16.5 is available and can successfully compile
+// this code. The above function object should take its place.
+
+template <typename T>
+auto buffer_sequence_end(T&& t) -> decltype(_buffer_sequence_end_(NEO_FWD(t))) {
+    return _buffer_sequence_end_(NEO_FWD(t));
+}
 
 }  // namespace cpo
 
