@@ -35,8 +35,8 @@ public:
      * A tag type that causes resize operations to leave new data in an
      * uninitialized state. Pass the tag value ``uninit``.
      */
-    static struct uninit_t {
-    } uninit;
+    struct uninit_t {};
+    constexpr static uninit_t uninit = {};
 
 private:
     using alloc_traits = std::allocator_traits<allocator_type>;
@@ -180,7 +180,9 @@ public:
         resize(other.size(), uninit);
         // Copy the data
         const auto my_stop = data_end();
-        for (auto my_it = data(), ot_it = other.data(); my_it != my_stop; ++my_it, ++ot_it) {
+        auto my_it = data();
+        auto ot_it = other.data();
+        for (; my_it != my_stop; ++my_it, ++ot_it) {
             *my_it = *ot_it;
         }
     }
