@@ -50,6 +50,9 @@ public:
     void consume(std::size_t n) noexcept { string().erase(0, n); }
 };
 
+template <typename T>
+dynamic_string_buffer(T) -> dynamic_string_buffer<T>;
+
 namespace detail {
 
 // clang-format off
