@@ -86,19 +86,13 @@ struct _buffer_sequence_begin_fn {
         return NEO_FWD(t).buffer_sequence_begin();
     }
 
-    template <detail::has_member_begin_bufseq T>
+    template <typename T>
         requires                                                                      //
         (detail::has_member_begin_bufseq<T>&& detail::has_nonmember_begin_bufseq<T>)  //
-        ||                                                                            //
-        detail::has_member_begin_bufseq<T>                                            //
+        || detail::has_member_begin_bufseq<T>                                         //
         decltype(auto) operator()(T&& t) const noexcept(noexcept(NEO_FWD(t).begin())) {
         return NEO_FWD(t).begin();
     }
-
-    // template <detail::has_nonmember_begin_bufseq T>
-    // decltype(auto) operator()(T&& t) const noexcept(noexcept(begin(NEO_FWD(t)))) {
-    //     return begin(NEO_FWD(t));
-    // }
 };
 
 #ifdef _MSC_VER
@@ -145,17 +139,20 @@ inline namespace cpo {
 
 struct _buffer_sequence_end_fn {
     template <detail::has_nonmember_bufseq_end T>
-    decltype(auto) operator()(T&& t) const {
-        return buffer_sequence_end(t);
+    decltype(auto) operator()(T&& t) const noexcept(noexcept(buffer_sequence_end(NEO_FWD(t)))) {
+        return buffer_sequence_end(NEO_FWD(t));
     }
     template <detail::has_member_bufseq_end T>
-    decltype(auto) operator()(T&& t) const {
-        return t.buffer_sequence_end();
+    decltype(auto) operator()(T&& t) const noexcept(noexcept(NEO_FWD(t).buffer_sequence_end())) {
+        return NEO_FWD(t).buffer_sequence_end();
     }
 
-    template <detail::has_member_end_bufseq T>
-    decltype(auto) operator()(T&& t) const {
-        return t.end();
+    template <typename T>
+        requires                                                                  //
+        (detail::has_member_end_bufseq<T>&& detail::has_nonmember_bufseq_end<T>)  //
+        || detail::has_member_end_bufseq<T>                                       //
+        decltype(auto) operator()(T&& t) const noexcept(noexcept(NEO_FWD(t).end())) {
+        return NEO_FWD(t).end();
     }
 };
 
