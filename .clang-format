@@ -1,4 +1,3 @@
----
 Language:        Cpp
 # BasedOnStyle:  WebKit
 # Access specifiers are best unindented, to keep them easy to spot:
@@ -81,4 +80,3 @@ CommentPragmas:  '^ IWYU pragma:'
 ForEachMacros:   [ foreach, Q_FOREACH, BOOST_FOREACH ]
 SpaceBeforeParens: ControlStatements
 DisableFormat:   false
-...
