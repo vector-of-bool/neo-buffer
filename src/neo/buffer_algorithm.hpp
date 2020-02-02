@@ -58,7 +58,7 @@ buffer_copy(const MutableSeq& dest, const ConstSeq& src, std::size_t max_copy) {
         }
     }
 
-    return 0;
+    return total_copied;
 }
 
 template <typename MutableSeq, typename ConstSeq>

@@ -7,6 +7,10 @@
 
 namespace neo {
 
+struct proto_buffer_safe {
+    proto_buffer_safe() = delete;
+};
+
 /**
  * A type is `buffer_safe` iff it is trivially copyable, or is an array
  * thereof that is: It is well-defined to make a copy of the object by copying
@@ -15,6 +19,8 @@ namespace neo {
 template <typename T>
 concept buffer_safe = trivially_copyable<T> ||  //
     (std::is_array_v<T>&& buffer_safe<std::remove_all_extents_t<T>>);
+
+static_assert(buffer_safe<proto_buffer_safe>);
 
 /**
  * Convert the given pointer to a pointer to `std::byte` referring to the

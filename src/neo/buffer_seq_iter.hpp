@@ -12,19 +12,39 @@
 
 namespace neo {
 
+struct proto_const_buffer_sequence_iterator {
+    proto_const_buffer_sequence_iterator() = delete;
+    proto_const_buffer_sequence_iterator* operator++();
+    const_buffer                          operator*() const;
+
+    bool operator!=(proto_const_buffer_sequence_iterator) const noexcept;
+};
+
+struct proto_mutable_buffer_sequence_iterator {
+    proto_mutable_buffer_sequence_iterator() = delete;
+    proto_mutable_buffer_sequence_iterator* operator++();
+    mutable_buffer                          operator*() const;
+
+    bool operator!=(proto_mutable_buffer_sequence_iterator) const noexcept;
+};
+
 // clang-format off
 template <typename T>
-concept const_buffer_sequence_iterator = requires(T iter) {
+concept const_buffer_sequence_iterator = requires(T iter, const T citer) {
     ++iter;
-    { *iter } -> convertible_to<const_buffer>;
+    { *citer } -> convertible_to<const_buffer>;
 };
+
+static_assert(const_buffer_sequence_iterator<proto_const_buffer_sequence_iterator>);
 
 template <typename T>
 concept mutable_buffer_sequence_iterator =
     const_buffer_sequence_iterator<T> &&
-    requires(T iter) {
-        { *iter } -> convertible_to<mutable_buffer>;
+    requires(const T citer) {
+        { *citer } -> convertible_to<mutable_buffer>;
     };
+
+static_assert(mutable_buffer_sequence_iterator<proto_mutable_buffer_sequence_iterator>);
 // clang-format on
 
 namespace detail {
@@ -55,7 +75,7 @@ concept has_nonmember_begin_bufseq = requires(T t) {
 
 inline namespace cpo {
 
-constexpr inline struct _buffer_sequence_begin_fn {
+struct _buffer_sequence_begin_fn {
     template <detail::has_nonmember_bufseq_begin T>
     decltype(auto) operator()(T&& t) const noexcept(noexcept(buffer_sequence_begin(NEO_FWD(t)))) {
         return buffer_sequence_begin(NEO_FWD(t));
@@ -66,20 +86,27 @@ constexpr inline struct _buffer_sequence_begin_fn {
         return NEO_FWD(t).buffer_sequence_begin();
     }
 
-    template <detail::has_member_begin_bufseq T>
+    template <typename T>
         requires                                                                      //
         (detail::has_member_begin_bufseq<T>&& detail::has_nonmember_begin_bufseq<T>)  //
-        ||                                                                            //
-        detail::has_member_begin_bufseq<T>                                            //
+        || detail::has_member_begin_bufseq<T>                                         //
         decltype(auto) operator()(T&& t) const noexcept(noexcept(NEO_FWD(t).begin())) {
         return NEO_FWD(t).begin();
     }
+};
 
-    // template <detail::has_nonmember_begin_bufseq T>
-    // decltype(auto) operator()(T&& t) const noexcept(noexcept(begin(NEO_FWD(t)))) {
-    //     return begin(NEO_FWD(t));
-    // }
-} buffer_sequence_begin;
+#ifdef _MSC_VER
+// XXX: The is a work-around for a bug in MSVC <16.5, and should be removed
+// when 16.5 is available and can successfully compile this code.
+constexpr inline _buffer_sequence_begin_fn _buffer_sequence_begin_;
+
+template <typename T>
+auto buffer_sequence_begin(T&& t) -> decltype(_buffer_sequence_begin_(NEO_FWD(t))) {
+    return _buffer_sequence_begin_(NEO_FWD(t));
+}
+#else
+constexpr inline _buffer_sequence_begin_fn buffer_sequence_begin;
+#endif
 
 }  // namespace cpo
 
@@ -110,21 +137,37 @@ concept has_member_end_bufseq = requires(T t) {
 
 inline namespace cpo {
 
-constexpr inline struct _buffer_sequence_end_fn {
+struct _buffer_sequence_end_fn {
     template <detail::has_nonmember_bufseq_end T>
-    decltype(auto) operator()(T&& t) const {
-        return buffer_sequence_end(t);
+    decltype(auto) operator()(T&& t) const noexcept(noexcept(buffer_sequence_end(NEO_FWD(t)))) {
+        return buffer_sequence_end(NEO_FWD(t));
     }
     template <detail::has_member_bufseq_end T>
-    decltype(auto) operator()(T&& t) const {
-        return t.buffer_sequence_end();
+    decltype(auto) operator()(T&& t) const noexcept(noexcept(NEO_FWD(t).buffer_sequence_end())) {
+        return NEO_FWD(t).buffer_sequence_end();
     }
 
-    template <detail::has_member_end_bufseq T>
-    decltype(auto) operator()(T&& t) const {
-        return t.end();
+    template <typename T>
+        requires                                                                  //
+        (detail::has_member_end_bufseq<T>&& detail::has_nonmember_bufseq_end<T>)  //
+        || detail::has_member_end_bufseq<T>                                       //
+        decltype(auto) operator()(T&& t) const noexcept(noexcept(NEO_FWD(t).end())) {
+        return NEO_FWD(t).end();
     }
-} buffer_sequence_end;
+};
+
+#ifdef _MSC_VER
+// XXX: The is a work-around for a bug in MSVC <16.5, and should be removed
+// when 16.5 is available and can successfully compile this code.
+constexpr inline _buffer_sequence_end_fn _buffer_sequence_end_;
+
+template <typename T>
+auto buffer_sequence_end(T&& t) -> decltype(_buffer_sequence_end_(NEO_FWD(t))) {
+    return _buffer_sequence_end_(NEO_FWD(t));
+}
+#else
+constexpr inline _buffer_sequence_end_fn   buffer_sequence_end;
+#endif
 
 }  // namespace cpo
 
