@@ -1,7 +1,0 @@
-Name: neo-buffer
-Namespace: neo
-Version: 0.2.0
-Test-Driver: Catch-Main
-
-Depends: neo-concepts ~0.2.1
-Depends: neo-fun ~0.1.0

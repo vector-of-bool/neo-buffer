@@ -1,0 +1,11 @@
+// Name: buffer
+
+// Uses: neo/concepts
+// Uses: neo/fun
+{
+    "name": "buffer",
+    "uses": [
+        "neo/concepts",
+        "neo/fun"
+    ]
+}
