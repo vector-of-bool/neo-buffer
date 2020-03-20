@@ -36,17 +36,29 @@ public:
         : _data(ptr)
         , _size(size) {}
 
-    constexpr const_buffer(mutable_buffer buf)
+    constexpr const_buffer(mutable_buffer buf) noexcept
         : _data(buf.data())
         , _size(buf.size()) {}
 
-    explicit constexpr const_buffer(std::string_view sv)
+    explicit constexpr const_buffer(std::string_view sv) noexcept
         : _data(byte_pointer(sv.data()))
         , _size(sv.size()) {}
+
+    template <typename Char, typename Traits>
+    explicit constexpr const_buffer(std::basic_string_view<Char, Traits> sv) noexcept
+        : _data(byte_pointer(sv.data()))
+        , _size(sv.size() * sizeof(Char)) {}
+
+    template <typename Char, typename Traits>
+    explicit constexpr operator std::basic_string_view<Char, Traits>() const noexcept {
+        return std::basic_string_view<Char, Traits>(reinterpret_cast<const Char*>(data()),
+                                                    size() / sizeof(Char));
+    }
 
     constexpr pointer   data() const noexcept { return _data; }
     constexpr pointer   data_end() const noexcept { return _data + size(); }
     constexpr size_type size() const noexcept { return _size; }
+    constexpr bool      empty() const noexcept { return size() == 0; }
 
     constexpr const_buffer& operator+=(size_type s) noexcept {
         assert(s <= size() && "Advanced neo::const_buffer past-the-end");
@@ -54,12 +66,34 @@ public:
         _size -= s;
         return *this;
     }
-};
 
-inline constexpr const_buffer operator+(const_buffer buf, const_buffer::size_type s) noexcept {
-    auto copy = buf;
-    copy += s;
-    return copy;
-}
+    constexpr void remove_prefix(size_type n) noexcept { *this += n; }
+    constexpr void remove_suffix(size_type n) noexcept {
+        assert(n <= size() && "neo::const_buffer::remove_suffix(n) : `n` is greater than size()");
+        _size -= n;
+    }
+
+    constexpr const_buffer first(size_type s) const noexcept {
+        assert(s <= size() && "neo::const_buffer::first() requested past-the-end of the buffer");
+        return const_buffer(_data, s);
+    }
+
+    constexpr const_buffer last(size_type s) const noexcept {
+        assert(s <= size() && "neo::const_buffer::last(n) : Given `n` is greater than size()");
+        auto off = _size - s;
+        return *this + off;
+    }
+
+    std::byte operator[](size_type offset) const noexcept {
+        assert(offset < size() && "neo::const_buffer[n] : Given `n` is past-the-end");
+        return data()[offset];
+    }
+
+    friend constexpr const_buffer operator+(const_buffer buf, const_buffer::size_type s) noexcept {
+        auto copy = buf;
+        copy += s;
+        return copy;
+    }
+};
 
 }  // namespace neo
