@@ -21,13 +21,21 @@ struct proto_mutable_data_container {
     using value_type = int;
 };
 
+template <typename Container>
+using data_pointer_t = decltype(std::declval<Container>().data());
+
+template <typename Container>
+using data_type_t = std::remove_pointer_t<data_pointer_t<Container>>;
+
+template <typename Container>
+constexpr std::size_t data_type_size_v = sizeof(data_type_t<Container>);
+
 // clang-format off
 template <typename T>
 concept const_data_container =
-    neo::trivially_copyable<typename T::value_type> &&
     requires (const T& cb) {
-        { cb.data() } noexcept -> same_as<typename T::const_pointer>;
-        { neo::byte_pointer(cb.data()) } noexcept -> same_as<const std::byte*>;
+        { cb.data() } noexcept -> buffer_safe;
+        { neo::byte_pointer(cb.data()) } noexcept;
         { cb.size() } noexcept -> convertible_to<std::size_t>;
     };
 
@@ -35,7 +43,6 @@ template <typename T>
 concept mutable_data_container =
     const_data_container<T> &&
     requires (T& cont) {
-        { cont.data() } noexcept -> same_as<typename T::pointer>;
         { neo::byte_pointer(cont.data()) } noexcept -> same_as<std::byte*>;
     };
 
@@ -51,6 +58,11 @@ concept mutable_buffer_constructible =
     const_buffer_constructible<T> &&
     neo::constructible_from<T, typename T::pointer, std::size_t>;
 // clang-format on
+
+template <const_data_container C>
+constexpr std::size_t data_container_byte_size(const C& c) noexcept {
+    return c.size() * data_type_size_v<C>;
+}
 
 class mutable_buffer {
 public:
@@ -75,16 +87,14 @@ public:
         : _data(p)
         , _size(size) {}
 
-    template <typename C>
-    requires mutable_data_container<std::decay_t<C>>  //
-        explicit constexpr mutable_buffer(C&& c) noexcept
+    template <mutable_data_container C>
+    explicit constexpr mutable_buffer(C&& c) noexcept
         : _data(neo::byte_pointer(c.data()))
-        , _size(c.size() * sizeof(typename std::decay_t<C>::value_type)) {}
+        , _size(c.size() * sizeof(data_type_t<C>)) {}
 
     template <mutable_buffer_constructible T>
     explicit constexpr operator T() const noexcept {
-        return T(reinterpret_cast<typename T::pointer>(data()),
-                 size() / sizeof(typename T::value_type));
+        return T(reinterpret_cast<data_pointer_t<T>>(data()), size() / sizeof(data_type_t<T>));
     }
 
     constexpr pointer   data() const noexcept { return _data; }
