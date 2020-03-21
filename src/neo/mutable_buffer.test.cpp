@@ -4,6 +4,9 @@
 #include <catch2/catch.hpp>
 
 #include <iostream>
+#include <string_view>
+
+using namespace std::string_view_literals;
 
 TEST_CASE("Default construct") {
     neo::mutable_buffer buf;
@@ -21,7 +24,6 @@ TEST_CASE("From pointer and size") {
     CHECK(buf[2] == std::byte{'a'});
     CHECK(buf[3] == std::byte{'m'});
 }
-
 
 TEST_CASE("Convert to string_view") {
     std::string         my_string = "Hello, test!";
@@ -71,9 +73,11 @@ TEST_CASE("Get a head/tail") {
     CHECK(std::string_view(buf) == "I am a string");
     neo::mutable_buffer part = buf.first(4);
     CHECK(std::string_view(part) == "I am");
+    CHECK(part.equals_string("I am"sv));
 
     part = buf.last(6);
     CHECK(std::string_view(part) == "string");
+    CHECK(part.equals_string("string"sv));
 }
 
 TEST_CASE("Single-buffer sequence") {

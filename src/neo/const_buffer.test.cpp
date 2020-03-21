@@ -4,6 +4,9 @@
 #include <catch2/catch.hpp>
 
 #include <iostream>
+#include <string_view>
+
+using namespace std::string_view_literals;
 
 TEST_CASE("Default construct") {
     neo::const_buffer buf;
@@ -57,6 +60,7 @@ TEST_CASE("From non-char-string_view") {
     neo::const_buffer buf{std::wstring_view{str}};
     CHECK(buf.size() == str.size() * sizeof(wchar_t));
     CHECK(buf.data() == neo::byte_pointer(buf.data()));
+    CHECK(buf.equals_string(std::wstring_view{L"Hello!"}));
 }
 
 TEST_CASE("Convert to string_view") {
@@ -105,9 +109,11 @@ TEST_CASE("Get a head/tail") {
     CHECK(std::string_view(buf) == "I am a string");
     neo::const_buffer part = buf.first(4);
     CHECK(std::string_view(part) == "I am");
+    CHECK(part.equals_string("I am"sv));
 
     part = buf.last(6);
     CHECK(std::string_view(part) == "string");
+    CHECK(part.equals_string("string"sv));
 }
 
 TEST_CASE("Single-buffer sequence") {

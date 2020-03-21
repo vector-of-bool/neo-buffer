@@ -5,11 +5,52 @@
 #include <cassert>
 #include <cstddef>
 #include <iterator>
-#include <string>
-#include <string_view>
 #include <type_traits>
 
 namespace neo {
+
+struct proto_const_data_container {
+    using value_type    = int;
+    using const_pointer = const value_type*;
+    const value_type* data() noexcept;
+    const value_type* data() const noexcept;
+    std::size_t       size() const noexcept;
+};
+
+struct proto_mutable_data_container {
+    using value_type = int;
+};
+
+// clang-format off
+template <typename T>
+concept const_data_container =
+    neo::trivially_copyable<typename T::value_type> &&
+    requires (const T& cb) {
+        { cb.data() } noexcept -> same_as<typename T::const_pointer>;
+        { neo::byte_pointer(cb.data()) } noexcept -> same_as<const std::byte*>;
+        { cb.size() } noexcept -> convertible_to<std::size_t>;
+    };
+
+template <typename T>
+concept mutable_data_container =
+    const_data_container<T> &&
+    requires (T& cont) {
+        { cont.data() } noexcept -> same_as<typename T::pointer>;
+        { neo::byte_pointer(cont.data()) } noexcept -> same_as<std::byte*>;
+    };
+
+static_assert(const_data_container<proto_const_data_container>);
+
+template <typename T>
+concept const_buffer_constructible =
+    neo::trivially_copyable<typename T::value_type> &&
+    neo::constructible_from<T, typename T::const_pointer, std::size_t>;
+
+template <typename T>
+concept mutable_buffer_constructible =
+    const_buffer_constructible<T> &&
+    neo::constructible_from<T, typename T::pointer, std::size_t>;
+// clang-format on
 
 class mutable_buffer {
 public:
@@ -34,15 +75,16 @@ public:
         : _data(p)
         , _size(size) {}
 
-    template <typename Char, typename Traits, typename Alloc>
-    explicit constexpr mutable_buffer(std::basic_string<Char, Traits, Alloc>& str) noexcept
-        : _data(neo::byte_pointer(str.data()))
-        , _size(str.size() * sizeof(Char)) {}
+    template <typename C>
+    requires mutable_data_container<std::decay_t<C>>  //
+        explicit constexpr mutable_buffer(C&& c) noexcept
+        : _data(neo::byte_pointer(c.data()))
+        , _size(c.size() * sizeof(typename std::decay_t<C>::value_type)) {}
 
-    template <typename Char, typename Traits>
-    explicit constexpr operator std::basic_string_view<Char, Traits>() const noexcept {
-        return std::basic_string_view<Char, Traits>(reinterpret_cast<const char*>(_data),
-                                                    size() / sizeof(Char));
+    template <mutable_buffer_constructible T>
+    explicit constexpr operator T() const noexcept {
+        return T(reinterpret_cast<typename T::pointer>(data()),
+                 size() / sizeof(typename T::value_type));
     }
 
     constexpr pointer   data() const noexcept { return _data; }
@@ -78,6 +120,15 @@ public:
                && "neo::mutable_buffer::mutable_buffer[n] : Given `n` is past-the-end");
         return data()[offset];
     }
+
+    // clang-format off
+    template <typename String>
+    requires const_data_container<String>
+             && equality_comparable<String>
+    constexpr bool equals_string(const String& s) const noexcept {
+        return String(*this) == s;
+    }
+    // clang-format on
 
     friend constexpr mutable_buffer operator+(mutable_buffer            buf,
                                               mutable_buffer::size_type s) noexcept {

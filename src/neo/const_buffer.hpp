@@ -4,9 +4,10 @@
 #include <neo/detail/single_buffer_iter.hpp>
 #include <neo/mutable_buffer.hpp>
 
+#include <neo/concepts.hpp>
+
 #include <cassert>
 #include <cstddef>
-#include <string_view>
 
 namespace neo {
 
@@ -40,19 +41,20 @@ public:
         : _data(buf.data())
         , _size(buf.size()) {}
 
-    explicit constexpr const_buffer(std::string_view sv) noexcept
-        : _data(byte_pointer(sv.data()))
-        , _size(sv.size()) {}
+    template <std::size_t N>
+    explicit constexpr const_buffer(const char (&arr)[N]) noexcept
+        : _data(neo::byte_pointer(arr))
+        , _size(N - 1) {}
 
-    template <typename Char, typename Traits>
-    explicit constexpr const_buffer(std::basic_string_view<Char, Traits> sv) noexcept
-        : _data(byte_pointer(sv.data()))
-        , _size(sv.size() * sizeof(Char)) {}
+    template <const_data_container C>
+    explicit constexpr const_buffer(const C& c) noexcept
+        : _data(byte_pointer(c.data()))
+        , _size(c.size() * sizeof(typename C::value_type)) {}
 
-    template <typename Char, typename Traits>
-    explicit constexpr operator std::basic_string_view<Char, Traits>() const noexcept {
-        return std::basic_string_view<Char, Traits>(reinterpret_cast<const Char*>(data()),
-                                                    size() / sizeof(Char));
+    template <const_buffer_constructible T>
+    explicit constexpr operator T() const noexcept {
+        return T(reinterpret_cast<typename T::const_pointer>(data()),
+                 size() / sizeof(typename T::value_type));
     }
 
     constexpr pointer   data() const noexcept { return _data; }
@@ -84,10 +86,19 @@ public:
         return *this + off;
     }
 
-    std::byte operator[](size_type offset) const noexcept {
+    constexpr std::byte operator[](size_type offset) const noexcept {
         assert(offset < size() && "neo::const_buffer[n] : Given `n` is past-the-end");
         return data()[offset];
     }
+
+    // clang-format off
+    template <typename String>
+    requires const_data_container<String>
+             && equality_comparable<String>
+    constexpr bool equals_string(const String& s) const noexcept {
+        return String(*this) == s;
+    }
+    // clang-format on
 
     friend constexpr const_buffer operator+(const_buffer buf, const_buffer::size_type s) noexcept {
         auto copy = buf;
