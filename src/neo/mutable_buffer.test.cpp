@@ -78,6 +78,10 @@ TEST_CASE("Get a head/tail") {
     part = buf.last(6);
     CHECK(std::string_view(part) == "string");
     CHECK(part.equals_string("string"sv));
+
+    auto [head, tail] = buf.split(4);
+    CHECK(head.equals_string("I am"sv));
+    CHECK(tail.equals_string(" a string"sv));
 }
 
 TEST_CASE("Single-buffer sequence") {

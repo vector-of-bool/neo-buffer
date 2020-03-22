@@ -4,6 +4,7 @@
 #include <neo/detail/single_buffer_iter.hpp>
 
 #include <cassert>
+#include <utility>
 
 namespace neo::detail {
 
@@ -94,7 +95,7 @@ public:
      * The given size must be less than or equal-to size()
      */
     constexpr ThisType first(size_type s) const noexcept {
-        assert(s <= size() && "neo::mutable_buffer::first() requested past-the-end of the buffer");
+        assert(s <= size() && "buffer.first(n) : Given `n` is greater than size()");
         return ThisType(_data, s);
     }
 
@@ -103,9 +104,19 @@ public:
      * The given size must be less than or equal-to size()
      */
     constexpr ThisType last(size_type s) const noexcept {
-        assert(s <= size() && "neo::mutable_buffer::last(n) : Given `n` is greater than size()");
+        assert(s <= size() && "buffer.last(n) : Given `n` is greater than size()");
         auto off = _size - s;
         return *this + off;
+    }
+
+    /**
+     * Split the buffer in two, partitioning an `part`.
+     */
+    constexpr std::pair<ThisType, ThisType> split(size_type part) const noexcept {
+        assert(part <= size() && "neo::buffer::split(n) : Given `n` is greater than size()");
+        auto left  = first(part);
+        auto right = last(size() - part);
+        return {left, right};
     }
 
     /**
@@ -124,14 +135,15 @@ public:
      * container.
      */
     template <typename String>
-    requires constructible_from<String, ThisType>
-             && equality_comparable<String>
+    requires constructible_from<String, ThisType> &&
+             equality_comparable<String>
     constexpr bool equals_string(const String& s) const noexcept {
         return String(static_cast<const ThisType>(*this)) == s;
     }
 
     template <typename T>
-    requires data_container<T> && constructible_from<T, typename T::const_pointer, size_type>
+    requires data_container<T> &&
+             constructible_from<T, typename T::const_pointer, size_type>
     explicit constexpr operator T() const noexcept {
         return T(reinterpret_cast<typename T::const_pointer>(data()),
                  size() / sizeof(typename T::value_type));
