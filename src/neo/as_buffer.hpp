@@ -3,10 +3,12 @@
 #include <neo/buffer_concepts.hpp>
 #include <neo/byte_pointer.hpp>
 #include <neo/const_buffer.hpp>
+#include <neo/data_container_concepts.hpp>
 #include <neo/mutable_buffer.hpp>
 
 #include <neo/concepts.hpp>
 
+#include <algorithm>
 #include <type_traits>
 #include <utility>
 
@@ -99,13 +101,13 @@ inline constexpr struct as_buffer_fn {
     /**
      * Create an immutable buffer referring to the elements of a data container
      */
-    template <const_data_container C>
+    template <data_container C>
     constexpr const_buffer operator()(const C& c, std::size_t max_size) const noexcept {
         return const_buffer(byte_pointer(c.data()),
                             std::min(max_size, data_container_byte_size(c)));
     }
 
-    template <const_data_container C>
+    template <data_container C>
     constexpr const_buffer operator()(const C& c) const noexcept {
         return (*this)(c, data_container_byte_size(c));
     }
