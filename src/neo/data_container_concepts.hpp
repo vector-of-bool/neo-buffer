@@ -44,17 +44,17 @@ constexpr auto data_type_size_v = sizeof(data_type_t<C>);
 template <typename C>
 concept data_container =
     trivially_copyable<data_type_t<C>> &&
-    requires (C& c) {
-        { neo::byte_pointer(std::data(c)) } noexcept -> convertible_to<const std::byte*>;
-        { std::size(c) } noexcept -> convertible_to<std::size_t>;
+    requires (const C& c) {
+        { neo::byte_pointer(std::data(c)) } -> convertible_to<const std::byte*>;
+        { std::size(c) } -> convertible_to<std::size_t>;
     };
 
 /**
  * Prototype model of `data_container`
  */
 struct proto_data_container {
-    const int*  data() const noexcept;
-    std::size_t size() const noexcept;
+    const int*  data() const;
+    std::size_t size() const;
 };
 static_assert(data_container<proto_data_container>);
 
@@ -65,16 +65,16 @@ template <typename C>
 concept mutable_data_container =
     data_container<C> &&
     requires (C& c) {
-        { neo::byte_pointer(std::data(c)) } noexcept -> same_as<std::byte*>;
+        { neo::byte_pointer(std::data(c)) } -> same_as<std::byte*>;
     };
 
 /**
  * Prototype model of `mutable_data_container`
  */
 struct proto_mutable_data_container {
-    int*        data() noexcept;
-    const int*  data() const noexcept;
-    std::size_t size() const noexcept;
+    int*        data();
+    const int*  data() const;
+    std::size_t size() const;
 };
 static_assert(mutable_data_container<proto_mutable_data_container>);
 
