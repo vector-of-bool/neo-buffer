@@ -115,4 +115,12 @@ inline constexpr struct as_buffer_fn {
 
 }  // namespace cpo
 
+template <typename T>
+concept as_buffer_convertible = requires(T val) {
+    as_buffer(val);
+};
+
+template <typename T>
+using as_buffer_t = decltype(as_buffer(std::declval<T&>()));
+
 }  // namespace neo
