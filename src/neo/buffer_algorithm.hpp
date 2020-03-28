@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstring>
+#include <type_traits>
 
 namespace neo {
 
@@ -14,7 +15,7 @@ namespace neo {
  * Return the number of individual buffers in the given buffer sequence
  */
 template <const_buffer_sequence Seq>
-constexpr std::size_t buffer_count(const Seq& seq) {
+constexpr std::size_t buffer_count(const Seq& seq) noexcept {
     return std::distance(buffer_sequence_begin(seq), buffer_sequence_end(seq));
 }
 
@@ -22,7 +23,7 @@ constexpr std::size_t buffer_count(const Seq& seq) {
  * Obtain the length of a buffer sequence, in bytes.
  */
 template <const_buffer_sequence Seq>
-constexpr std::size_t buffer_size(const Seq& seq) {
+constexpr std::size_t buffer_size(const Seq& seq) noexcept {
     auto        iter = buffer_sequence_begin(seq);
     const auto  stop = buffer_sequence_end(seq);
     std::size_t size = 0;
@@ -38,12 +39,17 @@ constexpr std::size_t buffer_size(const Seq& seq) {
  * actual number of bytes that are copied is the minimum of the buffer sizes and `max_copy`. The
  * number of bytes copied is returned.
  */
-constexpr std::size_t buffer_copy(mutable_buffer dest, const_buffer src, std::size_t max_copy) {
+constexpr std::size_t
+buffer_copy(mutable_buffer dest, const_buffer src, std::size_t max_copy) noexcept {
     // Calculate how much we should copy in this operation. It will be the minimum of the buffer
     // sizes and the maximum bytes we want to copy
-    const auto n_to_copy = std::min(src.size(), std::min(dest.size(), max_copy));
+    const auto n_to_copy = (std::min)(src.size(), (std::min)(dest.size(), max_copy));
     // Do the copy!
-    std::memcpy(dest.data(), src.data(), n_to_copy);
+    auto in  = src.data();
+    auto out = dest.data();
+    for (auto r = n_to_copy; r; --r, ++in, ++out) {
+        *out = *in;
+    }
     return n_to_copy;
 }
 
@@ -54,7 +60,7 @@ constexpr std::size_t buffer_copy(mutable_buffer dest, const_buffer src, std::si
  */
 template <mutable_buffer_sequence MutableSeq, const_buffer_sequence ConstSeq>
 constexpr std::size_t
-buffer_copy(const MutableSeq& dest, const ConstSeq& src, std::size_t max_copy) {
+buffer_copy(const MutableSeq& dest, const ConstSeq& src, std::size_t max_copy) noexcept {
     // Keep count of how many bytes remain
     auto remaining_to_copy = max_copy;
     // And how many bytes we have copied so far (to return later)
@@ -111,7 +117,7 @@ buffer_copy(const MutableSeq& dest, const ConstSeq& src, std::size_t max_copy) {
  * destination buffers.
  */
 template <mutable_buffer_sequence MutableSeq, const_buffer_sequence ConstSeq>
-constexpr std::size_t buffer_copy(const MutableSeq& dest, const ConstSeq& src) {
+constexpr std::size_t buffer_copy(const MutableSeq& dest, const ConstSeq& src) noexcept {
     auto src_size  = buffer_size(src);
     auto dest_size = buffer_size(dest);
     auto min_size  = (src_size > dest_size) ? dest_size : src_size;
