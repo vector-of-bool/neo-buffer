@@ -145,7 +145,7 @@ public:
     requires data_container<T> &&
              constructible_from<T, typename T::const_pointer, size_type>
     explicit constexpr operator T() const noexcept {
-        return T(reinterpret_cast<typename T::const_pointer>(data()),
+        return T(static_cast<typename T::const_pointer>((const void*)data()),
                  size() / sizeof(typename T::value_type));
     }
     // clang-format on
