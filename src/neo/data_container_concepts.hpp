@@ -43,7 +43,7 @@ constexpr auto data_type_size_v = sizeof(data_type_t<C>);
  */
 template <typename C>
 concept data_container =
-    trivially_copyable<data_type_t<C>> &&
+    std::is_trivial_v<data_type_t<C>> &&
     requires (const C& c) {
         { neo::byte_pointer(std::data(c)) } -> convertible_to<const std::byte*>;
         { std::size(c) } -> convertible_to<std::size_t>;
