@@ -19,14 +19,20 @@ public:
     using reference         = const value_type&;
     using iterator_category = std::forward_iterator_tag;
 
+    using sentinel = single_buffer_iter_sentinel;
+
+    constexpr single_buffer_iter() = default;
+
     constexpr single_buffer_iter(Buffer b) noexcept
         : _buf(b) {}
 
     constexpr reference operator*() const noexcept { return _buf; }
     constexpr pointer   operator->() const noexcept { return &_buf; }
 
-    constexpr bool operator==(single_buffer_iter_sentinel) const noexcept { return _dead; }
-    constexpr bool operator!=(single_buffer_iter_sentinel) const noexcept { return !_dead; }
+    friend constexpr bool operator==(single_buffer_iter it, sentinel) noexcept { return it._dead; }
+    friend constexpr bool operator==(sentinel, single_buffer_iter it) noexcept { return it._dead; }
+    friend constexpr bool operator!=(single_buffer_iter it, sentinel) noexcept { return !it._dead; }
+    friend constexpr bool operator!=(sentinel, single_buffer_iter it) noexcept { return !it._dead; }
     constexpr bool operator==(single_buffer_iter o) const noexcept { return _dead == o._dead; }
     constexpr bool operator!=(single_buffer_iter o) const noexcept { return !(*this == o); }
 

@@ -13,19 +13,23 @@
 namespace neo {
 
 struct proto_const_buffer_sequence_iterator {
-    proto_const_buffer_sequence_iterator() = delete;
-    proto_const_buffer_sequence_iterator* operator++();
+    using difference_type = int;
+    proto_const_buffer_sequence_iterator& operator++();
+    proto_const_buffer_sequence_iterator  operator++(int);
     const_buffer                          operator*() const;
 
     bool operator!=(proto_const_buffer_sequence_iterator) const noexcept;
+    bool operator==(proto_const_buffer_sequence_iterator) const noexcept;
 };
 
 struct proto_mutable_buffer_sequence_iterator {
-    proto_mutable_buffer_sequence_iterator() = delete;
-    proto_mutable_buffer_sequence_iterator* operator++();
+    using difference_type = int;
+    proto_mutable_buffer_sequence_iterator& operator++();
+    proto_mutable_buffer_sequence_iterator  operator++(int);
     mutable_buffer                          operator*() const;
 
     bool operator!=(proto_mutable_buffer_sequence_iterator) const noexcept;
+    bool operator==(proto_mutable_buffer_sequence_iterator) const noexcept;
 };
 
 // clang-format off
