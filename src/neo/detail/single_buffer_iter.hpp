@@ -17,7 +17,7 @@ public:
     using value_type        = Buffer;
     using pointer           = const value_type*;
     using reference         = const value_type&;
-    using iterator_category = std::forward_iterator_tag;
+    using iterator_category = std::bidirectional_iterator_tag;
 
     using sentinel = single_buffer_iter_sentinel;
 
@@ -44,6 +44,17 @@ public:
 
     constexpr single_buffer_iter& operator++() noexcept {
         _dead = true;
+        return *this;
+    }
+
+    constexpr single_buffer_iter operator--(int) noexcept {
+        auto me = *this;
+        _dead   = false;
+        return me;
+    }
+
+    constexpr single_buffer_iter& operator--() noexcept {
+        _dead = false;
         return *this;
     }
 };
