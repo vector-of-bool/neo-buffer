@@ -14,9 +14,12 @@
 namespace neo {
 
 struct proto_const_buffer_sequence_iterator {
-    using iterator_concept = std::input_iterator_tag;
-    using difference_type  = int;
-    using value_type       = const_buffer;
+    using iterator_concept  = std::input_iterator_tag;
+    using iterator_category = std::input_iterator_tag;
+    using difference_type   = int;
+    using value_type        = const_buffer;
+    using reference         = const_buffer&;
+    using pointer           = const_buffer*;
     proto_const_buffer_sequence_iterator& operator++();
     proto_const_buffer_sequence_iterator  operator++(int);
     const_buffer                          operator*() const;
@@ -26,9 +29,12 @@ struct proto_const_buffer_sequence_iterator {
 };
 
 struct proto_mutable_buffer_sequence_iterator {
-    using iterator_concept = std::input_iterator_tag;
-    using difference_type  = int;
-    using value_type       = mutable_buffer;
+    using iterator_concept  = std::input_iterator_tag;
+    using iterator_category = std::input_iterator_tag;
+    using difference_type   = int;
+    using value_type        = mutable_buffer;
+    using reference         = mutable_buffer&;
+    using pointer           = mutable_buffer*;
     proto_mutable_buffer_sequence_iterator& operator++();
     proto_mutable_buffer_sequence_iterator  operator++(int);
     mutable_buffer                          operator*() const;
