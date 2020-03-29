@@ -4,6 +4,8 @@
 
 #include <catch2/catch.hpp>
 
+using namespace std::string_view_literals;
+
 template <neo::dynamic_buffer T>
 void check_dynbuf(T) {}
 
@@ -30,10 +32,12 @@ TEST_CASE("dynamic_string_buffer") {
     // Consume some content from the front:
     dynbuf.consume(5);
     // We've moved the front:
+    CHECK(str.size() == 45);
     CHECK(str.find("a string") == 0);
 
     // Content is preserved if we grow larger:
     dynbuf.grow(200);
+    CHECK(str.size() == 245);
     CHECK(str.find("a string") == 0);
 
     // We can eat the entire buffer:
@@ -43,4 +47,10 @@ TEST_CASE("dynamic_string_buffer") {
     // Consuming more data is a no-op
     dynbuf.consume(1);
     CHECK(str == "");
+
+    // CHeck grabbing a slice of a dynamic buffer
+    str.clear();
+    str       = "Hello, world!";
+    auto part = dynbuf.data(7, 5);
+    CHECK(part.equals_string("world"sv));
 }

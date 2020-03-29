@@ -33,11 +33,11 @@ public:
     auto capacity() const noexcept { return string().capacity(); }
 
     mutable_buffers_type data(std::size_t position, std::size_t size) noexcept {
-        return as_buffer(string(), size) + position;
+        return (as_buffer(string()) + position).first(size);
     }
 
     const_buffers_type data(std::size_t position, std::size_t size) const noexcept {
-        return as_buffer(string(), size) + position;
+        return (as_buffer(string()) + position).first(size);
     }
 
     mutable_buffers_type grow(std::size_t n) {
