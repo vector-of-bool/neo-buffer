@@ -24,16 +24,21 @@ private:
     inner_buffer_iterator _seq_it;
     inner_buffer_sentinel _seq_stop;
 
-    std::size_t _elem_offset = 0;
+    std::size_t _size_remaining = 0;
+    std::size_t _elem_offset    = 0;
 
     constexpr static std::size_t _small_size = 16;
 
 public:
-    buffer_sequence_consumer(BaseSequence seq)
+    constexpr buffer_sequence_consumer(BaseSequence seq)
         : _seq_it(buffer_sequence_begin(seq))
-        , _seq_stop(buffer_sequence_end(seq)) {}
+        , _seq_stop(buffer_sequence_end(seq))
+        , _size_remaining(buffer_size(seq)) {}
 
-    auto prepare(std::size_t n_to_prepare) const noexcept {
+    constexpr std::size_t bytes_remaining() const noexcept { return _size_remaining; }
+    constexpr bool        empty() const noexcept { return bytes_remaining() == 0; }
+
+    constexpr auto prepare(std::size_t n_to_prepare) const noexcept {
         // Build a small vector of buffers from the whole sequence
         static_buffer_vector<buffer_type, _small_size> bufs;
         // Keep track of how far into the first buffer we are skippings
@@ -56,7 +61,8 @@ public:
         return bufs;
     }
 
-    void consume(std::size_t size) noexcept {
+    constexpr void consume(std::size_t size) noexcept {
+        assert(size <= bytes_remaining());
         while (_seq_it != _seq_stop && size != 0) {
             auto& buf = *_seq_it;
             if (size < buf.size()) {
@@ -71,6 +77,7 @@ public:
                 ++_seq_it;
             }
         }
+        _size_remaining -= size;
     }
 };
 
@@ -83,11 +90,14 @@ private:
     buffer_type _buf;
 
 public:
-    buffer_sequence_consumer(buffer_type b)
+    constexpr buffer_sequence_consumer(buffer_type b)
         : _buf(b) {}
 
-    auto prepare(std::size_t n) const noexcept { return as_buffer(_buf, n); }
-    void consume(std::size_t n) noexcept { _buf += n; }
+    constexpr auto prepare(std::size_t n) const noexcept { return as_buffer(_buf, n); }
+    constexpr void consume(std::size_t n) noexcept { _buf += n; }
+
+    constexpr std::size_t bytes_remaining() const noexcept { return _buf.size(); }
+    constexpr bool        empty() const noexcept { return bytes_remaining() == 0; }
 };
 
 template <typename T>
