@@ -12,24 +12,24 @@
 namespace neo {
 
 struct proto_const_buffer_sequence {
-    proto_const_buffer_sequence_iterator buffer_sequence_end();
-    proto_const_buffer_sequence_iterator buffer_sequence_begin();
+    proto_const_buffer_sequence_iterator buffer_sequence_end() const;
+    proto_const_buffer_sequence_iterator buffer_sequence_begin() const;
 };
 
 struct proto_mutable_buffer_sequence {
-    proto_mutable_buffer_sequence_iterator buffer_sequence_begin();
-    proto_mutable_buffer_sequence_iterator buffer_sequence_end();
+    proto_mutable_buffer_sequence_iterator buffer_sequence_end() const;
+    proto_mutable_buffer_sequence_iterator buffer_sequence_begin() const;
 };
 
 // clang-format off
 
 template <typename T>
-    requires requires (T t) { buffer_sequence_begin(t); }
-using buffer_sequence_iterator_t = decltype(buffer_sequence_begin(std::declval<T&>()));
+    requires requires (T t) { buffer_sequence_begin(std::as_const(t)); }
+using buffer_sequence_iterator_t = decltype(buffer_sequence_begin(std::as_const(std::declval<T&>())));
 
 template <typename T>
-    requires requires (T t) { buffer_sequence_end(t); }
-using buffer_sequence_sentinel_t = decltype(buffer_sequence_end(std::declval<T&>()));
+    requires requires (T t) { buffer_sequence_end(std::as_const(t)); }
+using buffer_sequence_sentinel_t = decltype(buffer_sequence_end(std::as_const(std::declval<T&>())));
 
 template <typename T>
 concept const_buffer_sequence =
@@ -44,6 +44,7 @@ concept const_buffer_sequence =
     const_buffer_sequence_iterator<buffer_sequence_iterator_t<T>>;
 
 static_assert(const_buffer_sequence<proto_const_buffer_sequence>);
+static_assert(same_as<buffer_sequence_iterator_t<proto_const_buffer_sequence>, proto_const_buffer_sequence_iterator>);
 
 template <typename T>
 concept mutable_buffer_sequence =

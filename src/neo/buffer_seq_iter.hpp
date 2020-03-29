@@ -5,6 +5,7 @@
 
 #include <neo/concepts.hpp>
 #include <neo/fwd.hpp>
+#include <neo/iterator_concepts.hpp>
 
 #include <iterator>
 #include <type_traits>
@@ -13,7 +14,9 @@
 namespace neo {
 
 struct proto_const_buffer_sequence_iterator {
-    using difference_type = int;
+    using iterator_concept = std::input_iterator_tag;
+    using difference_type  = int;
+    using value_type       = const_buffer;
     proto_const_buffer_sequence_iterator& operator++();
     proto_const_buffer_sequence_iterator  operator++(int);
     const_buffer                          operator*() const;
@@ -23,7 +26,9 @@ struct proto_const_buffer_sequence_iterator {
 };
 
 struct proto_mutable_buffer_sequence_iterator {
-    using difference_type = int;
+    using iterator_concept = std::input_iterator_tag;
+    using difference_type  = int;
+    using value_type       = mutable_buffer;
     proto_mutable_buffer_sequence_iterator& operator++();
     proto_mutable_buffer_sequence_iterator  operator++(int);
     mutable_buffer                          operator*() const;
@@ -34,19 +39,16 @@ struct proto_mutable_buffer_sequence_iterator {
 
 // clang-format off
 template <typename T>
-concept const_buffer_sequence_iterator = requires(T iter, const T citer) {
-    ++iter;
-    { *citer } -> convertible_to<const_buffer>;
-};
+concept const_buffer_sequence_iterator =
+    input_iterator<T> &&
+    convertible_to<iter_value_t<T>, const_buffer>;
 
 static_assert(const_buffer_sequence_iterator<proto_const_buffer_sequence_iterator>);
 
 template <typename T>
 concept mutable_buffer_sequence_iterator =
     const_buffer_sequence_iterator<T> &&
-    requires(const T citer) {
-        { *citer } -> convertible_to<mutable_buffer>;
-    };
+    same_as<iter_value_t<T>, mutable_buffer>;
 
 static_assert(mutable_buffer_sequence_iterator<proto_mutable_buffer_sequence_iterator>);
 // clang-format on

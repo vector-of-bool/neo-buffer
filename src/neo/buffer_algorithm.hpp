@@ -28,7 +28,7 @@ constexpr std::size_t buffer_size(const Seq& seq) noexcept {
     const auto  stop = buffer_sequence_end(seq);
     std::size_t size = 0;
     while (iter != stop) {
-        size += static_cast<std::size_t>(iter->size());
+        size += static_cast<std::size_t>((*iter).size());
         ++iter;
     }
     return size;
