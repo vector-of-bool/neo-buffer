@@ -170,6 +170,103 @@ public:
     }
 };
 
+// clang-format off
+template <typename T>
+    requires const_buffer_sequence<T> &&
+             (same_as<const_buffer, T> || same_as<mutable_buffer, T>)
+class bytewise_iterator<T> {
+    // clang-format on
+public:
+    using buffer_type      = T;
+    using iterator_concept = std::random_access_iterator_tag;
+    using difference_type  = std::ptrdiff_t;
+    using value_type       = std::byte;
+    using reference
+        = std::add_lvalue_reference_t<std::remove_pointer_t<typename buffer_type::pointer>>;
+
+private:
+    buffer_type _buf;
+    std::size_t _idx = 0;
+
+    void _adv(difference_type diff) {
+        if (diff < 0 && static_cast<std::size_t>(-diff) > _idx) {
+            assert(false && "Bytewise iterator rewind before the beginning of the buffer.");
+        } else if (static_cast<difference_type>(_buf.size() - _idx) < diff) {
+            assert(false && "Advancing bytewise iteator beyond end of the buffer");
+        }
+        _idx += diff;
+    }
+
+public:
+    constexpr bytewise_iterator() = default;
+
+    constexpr explicit bytewise_iterator(buffer_type b)
+        : _buf(b) {}
+
+    constexpr auto begin() const noexcept { return *this; }
+    constexpr auto end() const noexcept {
+        auto cp = *this;
+        cp._idx = _buf.size();
+        return cp;
+    }
+
+    constexpr auto& operator++() noexcept {
+        _adv(1);
+        return *this;
+    }
+    constexpr auto operator++(int) noexcept {
+        auto cp = *this;
+        ++*this;
+        return cp;
+    }
+
+    constexpr auto& operator--() noexcept {
+        _adv(-1);
+        return *this;
+    }
+    constexpr auto operator--(int) noexcept {
+        auto cp = *this;
+        --*this;
+        return cp;
+    }
+
+    constexpr auto& operator*() const noexcept { return _buf[_idx]; }
+    constexpr auto& operator[](difference_type pos) const noexcept { return _buf[_idx + pos]; }
+
+    constexpr bool operator==(bytewise_iterator other) const noexcept { return _idx == other._idx; }
+    constexpr bool operator!=(bytewise_iterator other) const noexcept { return !(*this == other); }
+    constexpr bool operator<(bytewise_iterator other) const noexcept { return _idx < other._idx; }
+    constexpr bool operator>(bytewise_iterator other) const noexcept { return _idx > other._idx; }
+    constexpr bool operator>=(bytewise_iterator other) const noexcept {
+        return !(_idx < other._idx);
+    }
+    constexpr bool operator<=(bytewise_iterator other) const noexcept {
+        return !(_idx > other._idx);
+    }
+
+    difference_type operator-(bytewise_iterator other) const noexcept { return _idx - other._idx; }
+
+    constexpr bytewise_iterator& operator+=(difference_type off) noexcept {
+        _adv(off);
+        return *this;
+    }
+
+    constexpr bytewise_iterator& operator-=(difference_type off) noexcept { return *this += -off; }
+
+    constexpr friend bytewise_iterator operator+(bytewise_iterator it,
+                                                 difference_type   off) noexcept {
+        return it += off;
+    }
+    constexpr friend bytewise_iterator operator+(difference_type   off,
+                                                 bytewise_iterator it) noexcept {
+        return it += off;
+    }
+    constexpr friend bytewise_iterator operator-(bytewise_iterator it,
+                                                 difference_type   off) noexcept {
+        return it -= off;
+    }
+};
+
 template <typename T>
 bytewise_iterator(T) -> bytewise_iterator<T>;
 
