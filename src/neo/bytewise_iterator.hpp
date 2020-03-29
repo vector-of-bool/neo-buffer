@@ -57,7 +57,7 @@ private:
         }
     }
 
-    void _rewind(std::size_t off) noexcept {
+    void _rewind(std::size_t off) noexcept requires bidirectional_iterator<inner_iter_type> {
         assert(_abs_pos != 0);
         // Check if we are about to step behind the bottom of the current buffer
         const auto buf_pos = _cur_buf_pos;
@@ -106,18 +106,19 @@ public:
         return cp;
     }
 
-    constexpr auto& operator--() noexcept {
+    constexpr auto& operator--() noexcept requires bidirectional_iterator<inner_iter_type> {
         _rewind(1);
         return *this;
     }
-    constexpr auto operator--(int) noexcept {
+    constexpr auto operator--(int) noexcept requires bidirectional_iterator<inner_iter_type> {
         auto cp = *this;
         --*this;
         return cp;
     }
 
     constexpr auto& operator*() const noexcept { return (*_cur)[_cur_buf_pos]; }
-    constexpr auto& operator[](difference_type pos) const noexcept {
+    constexpr auto& operator[](difference_type pos) const noexcept
+        requires bidirectional_iterator<inner_iter_type> {
         auto tmp = *this + pos;
         return *tmp;
     }
@@ -145,7 +146,8 @@ public:
         return _abs_pos - other._abs_pos;
     }
 
-    constexpr bytewise_iterator& operator+=(difference_type off) noexcept {
+    constexpr bytewise_iterator& operator+=(difference_type off) noexcept
+        requires bidirectional_iterator<inner_iter_type> {
         if (off < 0) {
             _rewind(static_cast<std::size_t>(-off));
         } else if (off > 0) {
@@ -154,18 +156,21 @@ public:
         return *this;
     }
 
-    constexpr bytewise_iterator& operator-=(difference_type off) noexcept { return *this += -off; }
+    constexpr bytewise_iterator& operator-=(difference_type off) noexcept
+        requires bidirectional_iterator<inner_iter_type> {
+        return *this += -off;
+    }
 
-    constexpr friend bytewise_iterator operator+(bytewise_iterator it,
-                                                 difference_type   off) noexcept {
+    constexpr friend bytewise_iterator operator+(bytewise_iterator it, difference_type off) noexcept
+        requires bidirectional_iterator<inner_iter_type> {
         return it += off;
     }
-    constexpr friend bytewise_iterator operator+(difference_type   off,
-                                                 bytewise_iterator it) noexcept {
+    constexpr friend bytewise_iterator operator+(difference_type off, bytewise_iterator it) noexcept
+        requires bidirectional_iterator<inner_iter_type> {
         return it += off;
     }
-    constexpr friend bytewise_iterator operator-(bytewise_iterator it,
-                                                 difference_type   off) noexcept {
+    constexpr friend bytewise_iterator operator-(bytewise_iterator it, difference_type off) noexcept
+        requires bidirectional_iterator<inner_iter_type> {
         return it -= off;
     }
 };
