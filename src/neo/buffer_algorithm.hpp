@@ -34,6 +34,9 @@ constexpr std::size_t buffer_size(const Seq& seq) noexcept {
     return size;
 }
 
+constexpr std::size_t buffer_size(const_buffer b) noexcept { return b.size(); }
+constexpr std::size_t buffer_size(mutable_buffer b) noexcept { return b.size(); }
+
 /**
  * Copy data from the source buffer into the destination buffer, with a maximum of `max_copy`. The
  * actual number of bytes that are copied is the minimum of the buffer sizes and `max_copy`. The
