@@ -39,3 +39,23 @@ TEST_CASE("Buffer consumer for singular buffers") {
     CHECK(n_copied == 6);
     CHECK(str == "bufferne ");  // Copied over the top of the prior string
 }
+
+TEST_CASE("Consume mutable buffers too") {
+    std::string a, b;
+    a.resize(10);
+    b.resize(3);
+    auto bufs_il = {
+        neo::mutable_buffer(a),
+        neo::mutable_buffer(b),
+    };
+
+    neo::buffer_sequence_consumer bufs{bufs_il};
+
+    buffer_copy(bufs.prepare(15), neo::const_buffer("I am a string"));
+    CHECK(a == "I am a str");
+    CHECK(b == "ing");
+
+    neo::buffer_sequence_consumer c{neo::mutable_buffer(a)};
+    buffer_copy(c.prepare(200), neo::const_buffer("short string"));
+    CHECK(a == "short stri");
+}
