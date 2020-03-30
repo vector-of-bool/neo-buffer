@@ -87,29 +87,22 @@ inline constexpr struct as_buffer_fn {
     /**
      * Create a mutable buffer referring to the elements of a data container
      */
-    template <mutable_data_container Container>
-    constexpr mutable_buffer operator()(Container& c, std::size_t max_size) const noexcept {
-        return mutable_buffer(byte_pointer(c.data()),
-                              std::min(max_size, data_container_byte_size(c)));
+    template <data_container Container>
+    constexpr auto operator()(Container&& c, std::size_t max_size) const noexcept {
+        return (*this)(byte_pointer(c.data()), std::min(max_size, data_container_byte_size(c)));
     }
 
-    template <mutable_data_container Container>
-    constexpr mutable_buffer operator()(Container& c) const noexcept {
+    template <data_container Container>
+    constexpr auto operator()(Container&& c) const noexcept {
         return (*this)(c, data_container_byte_size(c));
     }
 
-    /**
-     * Create an immutable buffer referring to the elements of a data container
-     */
-    template <data_container C>
-    constexpr const_buffer operator()(const C& c, std::size_t max_size) const noexcept {
-        return const_buffer(byte_pointer(c.data()),
-                            std::min(max_size, data_container_byte_size(c)));
+    constexpr const_buffer operator()(const std::byte* ptr, std::size_t size) const noexcept {
+        return const_buffer(ptr, size);
     }
 
-    template <data_container C>
-    constexpr const_buffer operator()(const C& c) const noexcept {
-        return (*this)(c, data_container_byte_size(c));
+    constexpr mutable_buffer operator()(std::byte* ptr, std::size_t size) const noexcept {
+        return mutable_buffer(ptr, size);
     }
 } as_buffer;
 

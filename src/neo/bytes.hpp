@@ -1,5 +1,6 @@
 #pragma once
 
+#include <neo/as_buffer.hpp>
 #include <neo/buffer_algorithm.hpp>
 #include <neo/buffer_concepts.hpp>
 #include <neo/const_buffer.hpp>
@@ -161,7 +162,7 @@ public:
     constexpr static basic_bytes copy(Bufs buf) noexcept {
         basic_bytes ret;
         ret.resize(neo::buffer_size(buf), uninit);
-        neo::buffer_copy(as_buffer(ret), buf);
+        neo::buffer_copy(neo::as_buffer(ret), buf);
         return ret;
     }
 
@@ -180,8 +181,8 @@ public:
         resize(other.size(), uninit);
         // Copy the data
         const auto my_stop = data_end();
-        auto my_it = data();
-        auto ot_it = other.data();
+        auto       my_it   = data();
+        auto       ot_it   = other.data();
         for (; my_it != my_stop; ++my_it, ++ot_it) {
             *my_it = *ot_it;
         }
@@ -301,15 +302,6 @@ public:
      * Resize the buffer. If grown, the new bytes will be left uninitialized.
      */
     constexpr pointer resize(size_type size, uninit_t) noexcept { return _resize_uninit(size); }
-
-    constexpr operator const_buffer() const noexcept { return const_buffer(data(), size()); }
-    constexpr operator mutable_buffer() noexcept { return mutable_buffer(data(), size()); }
-
-    constexpr friend const_buffer as_buffer(const basic_bytes& b) noexcept {
-        return const_buffer(b);
-    }
-
-    constexpr friend mutable_buffer as_buffer(basic_bytes& b) noexcept { return mutable_buffer(b); }
 
     constexpr friend auto as_dynamic_buffer(basic_bytes& b) noexcept {
         return dynamic_bytes_buffer(b);
