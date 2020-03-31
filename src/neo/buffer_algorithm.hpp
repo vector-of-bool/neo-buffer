@@ -56,6 +56,12 @@ buffer_copy(mutable_buffer dest, const_buffer src, std::size_t max_copy) noexcep
     return n_to_copy;
 }
 
+// Catch copying from mutable->mutable and call the overload of const->mutable
+constexpr std::size_t
+buffer_copy(mutable_buffer dest, mutable_buffer src, std::size_t max_copy) noexcept {
+    return buffer_copy(dest, const_buffer(src), max_copy);
+}
+
 /**
  * Copy data from the `src` buffer into the `dest` buffer, up to `max_copy`
  * bytes. The operation is bounds-checked, and the number of bytes copied is
