@@ -7,6 +7,7 @@
 #include <neo/mutable_buffer.hpp>
 
 #include <array>
+#include <cstring>
 #include <string_view>
 
 struct dummy_buffer_sequence {};
