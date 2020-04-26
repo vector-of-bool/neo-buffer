@@ -64,27 +64,6 @@ inline constexpr struct as_buffer_fn {
 
     // #############################################################################
     /**
-     * Create a mutable buffer that refers to the bytes of an array of trivial objects.
-     */
-    template <buffer_safe Trivial, std::size_t N>
-    constexpr mutable_buffer operator()(Trivial (&item)[N],
-                                        std::size_t max_size = sizeof(Trivial[N])) const noexcept {
-        auto min_size = std::min(sizeof(item), max_size);
-        return mutable_buffer(byte_pointer(std::addressof(item)), min_size);
-    }
-
-    /**
-     * Create an immutable buffer that refers to the bytes of an array of trivial objects.
-     */
-    template <buffer_safe Trivial, std::size_t N>
-    constexpr const_buffer operator()(const Trivial (&item)[N],
-                                      std::size_t max_size = sizeof(Trivial[N])) const noexcept {
-        auto min_size = std::min(sizeof(item), max_size);
-        return const_buffer(byte_pointer(std::addressof(item)), min_size);
-    }
-
-    // #############################################################################
-    /**
      * Create a mutable buffer referring to the elements of a data container
      */
     template <data_container Container>
