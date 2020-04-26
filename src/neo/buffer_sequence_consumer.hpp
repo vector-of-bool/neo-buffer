@@ -61,6 +61,11 @@ public:
         return bufs;
     }
 
+    [[nodiscard]] constexpr buffer_type next_contiguous() const noexcept {
+        assert(_seq_it != _seq_stop);
+        return *_seq_it + _elem_offset;
+    }
+
     constexpr void consume(std::size_t size) noexcept {
         assert(size <= bytes_remaining());
         while (_seq_it != _seq_stop && size != 0) {
@@ -96,8 +101,7 @@ public:
     constexpr auto prepare(std::size_t n) const noexcept { return as_buffer(_buf, n); }
     constexpr void consume(std::size_t n) noexcept { _buf += n; }
 
-    constexpr std::size_t bytes_remaining() const noexcept { return _buf.size(); }
-    constexpr bool        empty() const noexcept { return bytes_remaining() == 0; }
+    [[nodiscard]] constexpr buffer_type next_contiguous() const noexcept { return _buf; }
 };
 
 template <typename T>
