@@ -2,7 +2,6 @@
 
 #include <neo/buffer_concepts.hpp>
 
-#include <algorithm>
 #include <cstddef>
 
 namespace neo {
@@ -12,7 +11,17 @@ namespace neo {
  */
 template <const_buffer_sequence Seq>
 constexpr std::size_t buffer_count(const Seq& seq) noexcept {
-    return std::distance(buffer_sequence_begin(seq), buffer_sequence_end(seq));
+    auto it   = buffer_sequence_begin(seq);
+    auto stop = buffer_sequence_end(seq);
+    if constexpr (random_access_iterator<decltype(it)>) {
+        return stop - it;
+    } else {
+        std::size_t count = 0;
+        for (; it != stop; ++it) {
+            ++count;
+        }
+        return count;
+    }
 }
 
 }  // namespace neo
