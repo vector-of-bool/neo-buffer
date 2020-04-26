@@ -177,15 +177,16 @@ public:
 
 // clang-format off
 template <typename T>
-    requires const_buffer_sequence<T> &&
-             (same_as<const_buffer, T> || same_as<mutable_buffer, T>)
+    requires const_buffer_sequence<T> && as_buffer_convertible<T>
 class bytewise_iterator<T> {
     // clang-format on
 public:
-    using buffer_type      = T;
-    using iterator_concept = std::random_access_iterator_tag;
-    using difference_type  = std::ptrdiff_t;
-    using value_type       = std::byte;
+    using buffer_type       = as_buffer_t<T>;
+    using iterator_category = std::random_access_iterator_tag;
+    using iterator_concept  = std::random_access_iterator_tag;
+    using difference_type   = std::ptrdiff_t;
+    using pointer           = typename buffer_type::pointer;
+    using value_type        = std::byte;
     using reference
         = std::add_lvalue_reference_t<std::remove_pointer_t<typename buffer_type::pointer>>;
 
@@ -205,8 +206,9 @@ private:
 public:
     constexpr bytewise_iterator() = default;
 
-    constexpr explicit bytewise_iterator(buffer_type b)
-        : _buf(b) {}
+    template <as_buffer_convertible A>
+    constexpr explicit bytewise_iterator(A&& b)
+        : _buf(neo::as_buffer(b)) {}
 
     constexpr auto begin() const noexcept { return *this; }
     constexpr auto end() const noexcept {
