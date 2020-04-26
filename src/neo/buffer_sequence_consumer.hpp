@@ -30,15 +30,16 @@ private:
     constexpr static std::size_t _small_size = 16;
 
 public:
-    constexpr buffer_sequence_consumer(BaseSequence seq)
+    template <const_buffer_sequence Seq>
+    constexpr explicit buffer_sequence_consumer(Seq&& seq)
         : _seq_it(buffer_sequence_begin(seq))
         , _seq_stop(buffer_sequence_end(seq))
         , _size_remaining(buffer_size(seq)) {}
 
-    constexpr std::size_t bytes_remaining() const noexcept { return _size_remaining; }
-    constexpr bool        empty() const noexcept { return bytes_remaining() == 0; }
+    [[nodiscard]] constexpr std::size_t bytes_remaining() const noexcept { return _size_remaining; }
+    [[nodiscard]] constexpr bool        empty() const noexcept { return bytes_remaining() == 0; }
 
-    constexpr auto prepare(std::size_t n_to_prepare) const noexcept {
+    [[nodiscard]] constexpr auto prepare(std::size_t n_to_prepare) const noexcept {
         // Build a small vector of buffers from the whole sequence
         static_buffer_vector<buffer_type, _small_size> bufs;
         // Keep track of how far into the first buffer we are skippings
@@ -98,10 +99,15 @@ public:
     constexpr buffer_sequence_consumer(buffer_type b)
         : _buf(b) {}
 
-    constexpr auto prepare(std::size_t n) const noexcept { return as_buffer(_buf, n); }
+    [[nodiscard]] constexpr auto prepare(std::size_t n) const noexcept {
+        return as_buffer(_buf, n);
+    }
     constexpr void consume(std::size_t n) noexcept { _buf += n; }
 
     [[nodiscard]] constexpr buffer_type next_contiguous() const noexcept { return _buf; }
+
+    [[nodiscard]] constexpr std::size_t bytes_remaining() const noexcept { return _buf.size(); }
+    [[nodiscard]] constexpr bool        empty() const noexcept { return bytes_remaining() == 0; }
 };
 
 template <typename T>

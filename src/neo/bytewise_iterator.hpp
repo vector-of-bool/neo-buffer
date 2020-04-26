@@ -1,5 +1,6 @@
 #pragma once
 
+#include <neo/as_buffer.hpp>
 #include <neo/buffer_concepts.hpp>
 #include <neo/buffer_seq_iter.hpp>
 
@@ -16,18 +17,23 @@ class bytewise_iterator {
     using inner_sentinel_type = buffer_sequence_sentinel_t<Buffers>;
 
 public:
-    using buffer_type      = iter_value_t<inner_iter_type>;
-    using iterator_concept = typename std::iterator_traits<inner_iter_type>::iterator_category;
-    using difference_type  = std::ptrdiff_t;
-    using value_type       = std::remove_cv_t<std::remove_pointer_t<typename buffer_type::pointer>>;
+    using buffer_type       = iter_value_t<inner_iter_type>;
+    using iterator_category = typename std::iterator_traits<inner_iter_type>::iterator_category;
+    using iterator_concept  = typename std::iterator_traits<inner_iter_type>::iterator_category;
+    using pointer           = typename buffer_type::pointer;
+    using difference_type   = std::ptrdiff_t;
+    using value_type = std::remove_cv_t<std::remove_pointer_t<typename buffer_type::pointer>>;
     using reference
         = std::add_lvalue_reference_t<std::remove_pointer_t<typename buffer_type::pointer>>;
 
 private:
-    inner_iter_type     _cur;
-    inner_sentinel_type _stop;
-    std::size_t         _cur_buf_pos = 0;
-    std::size_t         _abs_pos     = 0;
+    // The unerlying buffer iterator
+    inner_iter_type _cur;
+    // We might have an empty sentinel on our hands...
+    [[no_unique_address]] inner_sentinel_type _stop;
+
+    std::size_t _cur_buf_pos = 0;
+    std::size_t _abs_pos     = 0;
 
     auto _buf() const noexcept { return *_cur; }
 
@@ -86,8 +92,8 @@ public:
         }
     }
 
-    constexpr auto begin() const noexcept { return *this; }
-    constexpr auto end() const noexcept {
+    [[nodiscard]] constexpr auto begin() const noexcept { return *this; }
+    [[nodiscard]] constexpr auto end() const noexcept {
         auto cp = *this;
         while (cp._cur != cp._stop) {
             cp._abs_pos += cp._cur->size();
@@ -116,33 +122,33 @@ public:
         return cp;
     }
 
-    constexpr auto& operator*() const noexcept { return (*_cur)[_cur_buf_pos]; }
-    constexpr auto& operator[](difference_type pos) const noexcept
+    [[nodiscard]] constexpr auto& operator*() const noexcept { return (*_cur)[_cur_buf_pos]; }
+    [[nodiscard]] constexpr auto& operator[](difference_type pos) const noexcept
         requires bidirectional_iterator<inner_iter_type> {
         auto tmp = *this + pos;
         return *tmp;
     }
 
-    constexpr bool operator==(const bytewise_iterator& right) const noexcept {
+    [[nodiscard]] constexpr bool operator==(const bytewise_iterator& right) const noexcept {
         return _abs_pos == right._abs_pos;
     }
-    constexpr bool operator!=(const bytewise_iterator& right) const noexcept {
+    [[nodiscard]] constexpr bool operator!=(const bytewise_iterator& right) const noexcept {
         return !(*this == right);
     }
-    constexpr bool operator<(const bytewise_iterator& other) const noexcept {
+    [[nodiscard]] constexpr bool operator<(const bytewise_iterator& other) const noexcept {
         return _abs_pos < other._abs_pos;
     }
-    constexpr bool operator>(const bytewise_iterator& other) const noexcept {
+    [[nodiscard]] constexpr bool operator>(const bytewise_iterator& other) const noexcept {
         return _abs_pos > other._abs_pos;
     }
-    constexpr bool operator>=(const bytewise_iterator& other) const noexcept {
+    [[nodiscard]] constexpr bool operator>=(const bytewise_iterator& other) const noexcept {
         return !(_abs_pos < other._abs_pos);
     }
-    constexpr bool operator<=(const bytewise_iterator& other) const noexcept {
+    [[nodiscard]] constexpr bool operator<=(const bytewise_iterator& other) const noexcept {
         return !(_abs_pos > other._abs_pos);
     }
 
-    difference_type operator-(const bytewise_iterator& other) const noexcept {
+    [[nodiscard]] difference_type operator-(const bytewise_iterator& other) const noexcept {
         return _abs_pos - other._abs_pos;
     }
 
@@ -161,15 +167,18 @@ public:
         return *this += -off;
     }
 
-    constexpr friend bytewise_iterator operator+(bytewise_iterator it, difference_type off) noexcept
+    [[nodiscard]] constexpr friend bytewise_iterator operator+(bytewise_iterator it,
+                                                               difference_type   off) noexcept
         requires bidirectional_iterator<inner_iter_type> {
         return it += off;
     }
-    constexpr friend bytewise_iterator operator+(difference_type off, bytewise_iterator it) noexcept
+    [[nodiscard]] constexpr friend bytewise_iterator operator+(difference_type   off,
+                                                               bytewise_iterator it) noexcept
         requires bidirectional_iterator<inner_iter_type> {
         return it += off;
     }
-    constexpr friend bytewise_iterator operator-(bytewise_iterator it, difference_type off) noexcept
+    [[nodiscard]] constexpr friend bytewise_iterator operator-(bytewise_iterator it,
+                                                               difference_type   off) noexcept
         requires bidirectional_iterator<inner_iter_type> {
         return it -= off;
     }
@@ -210,8 +219,8 @@ public:
     constexpr explicit bytewise_iterator(A&& b)
         : _buf(neo::as_buffer(b)) {}
 
-    constexpr auto begin() const noexcept { return *this; }
-    constexpr auto end() const noexcept {
+    [[nodiscard]] constexpr auto begin() const noexcept { return *this; }
+    [[nodiscard]] constexpr auto end() const noexcept {
         auto cp = *this;
         cp._idx = _buf.size();
         return cp;
@@ -237,21 +246,33 @@ public:
         return cp;
     }
 
-    constexpr auto& operator*() const noexcept { return _buf[_idx]; }
-    constexpr auto& operator[](difference_type pos) const noexcept { return _buf[_idx + pos]; }
+    [[nodiscard]] constexpr auto& operator*() const noexcept { return _buf[_idx]; }
+    [[nodiscard]] constexpr auto& operator[](difference_type pos) const noexcept {
+        return _buf[_idx + pos];
+    }
 
-    constexpr bool operator==(bytewise_iterator other) const noexcept { return _idx == other._idx; }
-    constexpr bool operator!=(bytewise_iterator other) const noexcept { return !(*this == other); }
-    constexpr bool operator<(bytewise_iterator other) const noexcept { return _idx < other._idx; }
-    constexpr bool operator>(bytewise_iterator other) const noexcept { return _idx > other._idx; }
-    constexpr bool operator>=(bytewise_iterator other) const noexcept {
+    [[nodiscard]] constexpr bool operator==(bytewise_iterator other) const noexcept {
+        return _idx == other._idx;
+    }
+    [[nodiscard]] constexpr bool operator!=(bytewise_iterator other) const noexcept {
+        return !(*this == other);
+    }
+    [[nodiscard]] constexpr bool operator<(bytewise_iterator other) const noexcept {
+        return _idx < other._idx;
+    }
+    [[nodiscard]] constexpr bool operator>(bytewise_iterator other) const noexcept {
+        return _idx > other._idx;
+    }
+    [[nodiscard]] constexpr bool operator>=(bytewise_iterator other) const noexcept {
         return !(_idx < other._idx);
     }
-    constexpr bool operator<=(bytewise_iterator other) const noexcept {
+    [[nodiscard]] constexpr bool operator<=(bytewise_iterator other) const noexcept {
         return !(_idx > other._idx);
     }
 
-    difference_type operator-(bytewise_iterator other) const noexcept { return _idx - other._idx; }
+    [[nodiscard]] difference_type operator-(bytewise_iterator other) const noexcept {
+        return _idx - other._idx;
+    }
 
     constexpr bytewise_iterator& operator+=(difference_type off) noexcept {
         _adv(off);
@@ -260,16 +281,16 @@ public:
 
     constexpr bytewise_iterator& operator-=(difference_type off) noexcept { return *this += -off; }
 
-    constexpr friend bytewise_iterator operator+(bytewise_iterator it,
-                                                 difference_type   off) noexcept {
+    [[nodiscard]] constexpr friend bytewise_iterator operator+(bytewise_iterator it,
+                                                               difference_type   off) noexcept {
         return it += off;
     }
-    constexpr friend bytewise_iterator operator+(difference_type   off,
-                                                 bytewise_iterator it) noexcept {
+    [[nodiscard]] constexpr friend bytewise_iterator operator+(difference_type   off,
+                                                               bytewise_iterator it) noexcept {
         return it += off;
     }
-    constexpr friend bytewise_iterator operator-(bytewise_iterator it,
-                                                 difference_type   off) noexcept {
+    [[nodiscard]] constexpr friend bytewise_iterator operator-(bytewise_iterator it,
+                                                               difference_type   off) noexcept {
         return it -= off;
     }
 };

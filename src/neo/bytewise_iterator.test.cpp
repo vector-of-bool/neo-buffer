@@ -51,7 +51,6 @@ TEST_CASE("Simple buffer sequence") {
     CHECK((char)*it++ == 'o');
     CHECK((char)*it++ == 'n');
     CHECK((char)*it++ == 'd');
-    it == stop;
     CHECK(it == stop);
     // Null advance
     it += 0;

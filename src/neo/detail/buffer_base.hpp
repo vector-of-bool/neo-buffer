@@ -49,13 +49,13 @@ public:
         , _size(size) {}
 
     /// Obtain a pointer to the data
-    constexpr pointer data() const noexcept { return _data; }
+    [[nodiscard]] constexpr pointer data() const noexcept { return _data; }
     /// Obtain the past-the-end pointer for the data
-    constexpr pointer data_end() const noexcept { return _data + size(); }
+    [[nodiscard]] constexpr pointer data_end() const noexcept { return _data + size(); }
     /// Obtain the number of bytes in the buffer
-    constexpr size_type size() const noexcept { return _size; }
+    [[nodiscard]] constexpr size_type size() const noexcept { return _size; }
     /// Determine whether the buffer is empty (size == 0)
-    constexpr bool empty() const noexcept { return size() == 0; }
+    [[nodiscard]] constexpr bool empty() const noexcept { return size() == 0; }
 
     /**
      * Remove the first `n` bytes from the buffer
@@ -85,7 +85,8 @@ public:
     /**
      * Get a reference to the Nth byte in the buffer
      */
-    constexpr std::remove_pointer_t<pointer>& operator[](size_type offset) const noexcept {
+    [[nodiscard]] constexpr std::remove_pointer_t<pointer>&
+    operator[](size_type offset) const noexcept {
         assert(offset < size() && "buffer[n] : Given `n` is past-the-end");
         return data()[offset];
     }
@@ -94,7 +95,7 @@ public:
      * Create a new buffer that only views the first `s` bytes of the buffer.
      * The given size must be less than or equal-to size()
      */
-    constexpr ThisType first(size_type s) const noexcept {
+    [[nodiscard]] constexpr ThisType first(size_type s) const noexcept {
         assert(s <= size() && "buffer.first(n) : Given `n` is greater than size()");
         return ThisType(_data, s);
     }
@@ -103,7 +104,7 @@ public:
      * Create a new buffer that views the last `s` bytes of the buffer.
      * The given size must be less than or equal-to size()
      */
-    constexpr ThisType last(size_type s) const noexcept {
+    [[nodiscard]] constexpr ThisType last(size_type s) const noexcept {
         assert(s <= size() && "buffer.last(n) : Given `n` is greater than size()");
         auto off = _size - s;
         return *this + off;
@@ -112,7 +113,7 @@ public:
     /**
      * Split the buffer in two, partitioning an `part`.
      */
-    constexpr std::pair<ThisType, ThisType> split(size_type part) const noexcept {
+    [[nodiscard]] constexpr std::pair<ThisType, ThisType> split(size_type part) const noexcept {
         assert(part <= size() && "neo::buffer::split(n) : Given `n` is greater than size()");
         auto left  = first(part);
         auto right = last(size() - part);
@@ -123,7 +124,7 @@ public:
      * Create a new buffer that drops the first `s` bytes from the left-hand
      * buffer.
      */
-    friend constexpr ThisType operator+(buffer_base buf, size_type s) noexcept {
+    [[nodiscard]] friend constexpr ThisType operator+(buffer_base buf, size_type s) noexcept {
         auto copy = buf;
         copy += s;
         return ThisType(copy);
@@ -141,11 +142,9 @@ public:
         return String(static_cast<const ThisType>(*this)) == s;
     }
 
-    template <typename T>
-    requires data_container<T> &&
-             constructible_from<T, typename T::const_pointer, size_type>
+    template <const_buffer_constructible T>
     explicit constexpr operator T() const noexcept {
-        return T(static_cast<typename T::const_pointer>((const void*)data()),
+        return T(static_cast<const_data_pointer_t<T>>((const void*)data()),
                  size() / sizeof(typename T::value_type));
     }
     // clang-format on

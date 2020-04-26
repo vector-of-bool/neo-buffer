@@ -42,7 +42,8 @@ inline constexpr struct as_buffer_fn {
      * Find ADL as_buffer
      */
     template <detail::has_nonmember_as_buffer T>
-    constexpr decltype(auto) operator()(T&& what) const noexcept(noexcept(as_buffer(what))) {
+    [[nodiscard]] constexpr decltype(auto) operator()(T&& what) const
+        noexcept(noexcept(as_buffer(what))) {
         return as_buffer(what);
     }
 
@@ -50,7 +51,8 @@ inline constexpr struct as_buffer_fn {
      * Find member as_buffer
      */
     template <detail::has_member_as_buffer T>
-    constexpr decltype(auto) operator()(T&& what) const noexcept(noexcept(what.as_buffer())) {
+    [[nodiscard]] constexpr decltype(auto) operator()(T&& what) const
+        noexcept(noexcept(what.as_buffer())) {
         return what.as_buffer();
     }
 
@@ -58,7 +60,8 @@ inline constexpr struct as_buffer_fn {
      * When both are available, prefer member as_buffer
      */
     template <detail::has_both_as_buffer T>
-    constexpr decltype(auto) operator()(T&& what) const noexcept(noexcept(what.as_buffer())) {
+    [[nodiscard]] constexpr decltype(auto) operator()(T&& what) const
+        noexcept(noexcept(what.as_buffer())) {
         return what.as_buffer();
     }
 
@@ -67,20 +70,22 @@ inline constexpr struct as_buffer_fn {
      * Create a mutable buffer referring to the elements of a data container
      */
     template <data_container Container>
-    constexpr auto operator()(Container&& c, std::size_t max_size) const noexcept {
-        return (*this)(byte_pointer(c.data()), std::min(max_size, data_container_byte_size(c)));
+    [[nodiscard]] constexpr auto operator()(Container&& c, std::size_t max_size) const noexcept {
+        return (*this)(byte_pointer(std::data(c)), std::min(max_size, data_container_byte_size(c)));
     }
 
     template <data_container Container>
-    constexpr auto operator()(Container&& c) const noexcept {
+    [[nodiscard]] constexpr auto operator()(Container&& c) const noexcept {
         return (*this)(c, data_container_byte_size(c));
     }
 
-    constexpr const_buffer operator()(const std::byte* ptr, std::size_t size) const noexcept {
+    [[nodiscard]] constexpr const_buffer operator()(const std::byte* ptr,
+                                                    std::size_t      size) const noexcept {
         return const_buffer(ptr, size);
     }
 
-    constexpr mutable_buffer operator()(std::byte* ptr, std::size_t size) const noexcept {
+    [[nodiscard]] constexpr mutable_buffer operator()(std::byte*  ptr,
+                                                      std::size_t size) const noexcept {
         return mutable_buffer(ptr, size);
     }
 } as_buffer;
