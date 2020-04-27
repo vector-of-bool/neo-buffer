@@ -181,6 +181,11 @@ public:
         set(bits, count);
         skip(count);
     }
+
+    /**
+     * Get the byte iterator underneath this object.
+     */
+    constexpr auto inner_iterator() const noexcept { return _it; }
 };
 
 template <const_buffer_sequence Bufs>
