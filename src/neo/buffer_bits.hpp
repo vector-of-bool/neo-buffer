@@ -84,7 +84,7 @@ public:
         }
 
         /// 3: Take the final remaining bits that we want
-        auto fin = *it;
+        auto fin = count ? *it : std::byte();
         fin >>= (8 - count);
         acc <<= count;
         acc |= static_cast<std::uint64_t>(fin);
