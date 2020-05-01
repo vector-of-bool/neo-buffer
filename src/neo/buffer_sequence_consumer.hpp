@@ -69,8 +69,9 @@ public:
 
     constexpr void consume(std::size_t size) noexcept {
         assert(size <= bytes_remaining());
+        _size_remaining -= size;
         while (_seq_it != _seq_stop && size != 0) {
-            auto& buf = *_seq_it;
+            auto buf = next_contiguous();
             if (size < buf.size()) {
                 // We're partially-consuming a buffer. Next time we iterate, we
                 // need to skip into that buffer.
@@ -83,7 +84,6 @@ public:
                 ++_seq_it;
             }
         }
-        _size_remaining -= size;
     }
 };
 

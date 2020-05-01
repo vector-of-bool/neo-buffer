@@ -2,6 +2,8 @@
 
 #include <catch2/catch.hpp>
 
+using namespace std::literals;
+
 TEST_CASE("Consume some buffers") {
     auto bufs = {
         neo::const_buffer("meow"),
@@ -19,6 +21,15 @@ TEST_CASE("Consume some buffers") {
     n_copied = buffer_copy(neo::mutable_buffer(str), cbs.prepare(200));
     CHECK(n_copied == 6);
     CHECK(str == "rksing");
+
+    // Consume on buffer boundaries
+    cbs = neo::buffer_sequence_consumer{bufs};
+    CHECK(cbs.bytes_remaining() == 12);
+    cbs.consume(2);
+    CHECK(cbs.bytes_remaining() == 10);
+    cbs.consume(2);
+    CHECK(cbs.bytes_remaining() == 8);
+    CHECK(cbs.next_contiguous().equals_string("bark"sv));
 }
 
 TEST_CASE("Buffer consumer for singular buffers") {
