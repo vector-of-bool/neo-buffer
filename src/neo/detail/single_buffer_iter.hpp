@@ -23,7 +23,7 @@ public:
 
     constexpr single_buffer_iter() = default;
 
-    constexpr single_buffer_iter(Buffer b) noexcept
+    constexpr explicit single_buffer_iter(Buffer b) noexcept
         : _buf(b) {}
 
     constexpr reference operator*() const noexcept { return _buf; }
