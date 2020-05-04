@@ -15,9 +15,6 @@ class dynamic_string_buffer {
 public:
     using string_type = String;
 
-    using const_buffers_type   = const_buffer;
-    using mutable_buffers_type = mutable_buffer;
-
 private:
     std::reference_wrapper<string_type> _string;
 
@@ -32,15 +29,15 @@ public:
     auto max_size() const noexcept { return string().max_size(); }
     auto capacity() const noexcept { return string().capacity(); }
 
-    mutable_buffers_type data(std::size_t position, std::size_t size) noexcept {
-        return (as_buffer(string()) + position).first(size);
+    mutable_buffer data(std::size_t position, std::size_t size) noexcept {
+        return (mutable_buffer(string()) + position).first(size);
     }
 
-    const_buffers_type data(std::size_t position, std::size_t size) const noexcept {
-        return (as_buffer(string()) + position).first(size);
+    const_buffer data(std::size_t position, std::size_t size) const noexcept {
+        return (const_buffer(string()) + position).first(size);
     }
 
-    mutable_buffers_type grow(std::size_t n) {
+    mutable_buffer grow(std::size_t n) {
         auto init_size = size();
         string().resize(init_size + n);
         return data(init_size, n);
