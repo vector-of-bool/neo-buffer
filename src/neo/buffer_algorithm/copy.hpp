@@ -1,37 +1,92 @@
 #pragma once
 
 #include <neo/buffer_concepts.hpp>
+#include <neo/buffer_sequence_consumer.hpp>
+
+#include <neo/concepts.hpp>
 
 #include "./size.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <cstddef>
 
 namespace neo {
 
 /**
+ * Low-level buffer copier that copies from the beginning to the end.
+ * `dest` and `src` must have the same size()!
+ */
+constexpr void ll_buffer_copy_forward(mutable_buffer dest, const_buffer src) noexcept {
+    assert(dest.size() == src.size());
+    auto in  = src.data();
+    auto out = dest.data();
+    for (; in != src.data_end(); ++in, ++out) {
+        *out = *in;
+    }
+}
+
+/**
+ * Low-level buffer copier that copies from the end to the beginning
+ * `dest` and `src` must have the same size()!
+ */
+constexpr void ll_buffer_copy_backward(mutable_buffer dest, const_buffer src) noexcept {
+    assert(dest.size() == src.size());
+    auto r_in  = src.data_end();
+    auto r_out = dest.data_end();
+    while (r_in != src.data()) {
+        *--r_out = *--r_in;
+    }
+}
+
+/**
+ * Low-level buffer copier that copies buffers in a way that assumes `dest` and
+ * `src` are disjoin. Behavior is undefined otherwise.
+ * `dest` and `src` must have the same size()!
+ */
+constexpr void ll_buffer_copy_fast(mutable_buffer dest, const_buffer src) noexcept {
+    /// XXX: Improve with memcpy() when we have is_constant_evaluated()
+    ll_buffer_copy_forward(dest, src);
+}
+
+/**
+ * Low-level buffer copier that copies buffers in a way that provides intuitive
+ * results in the case of overlap.
+ * `dest` and `src` must have the same size()!
+ */
+constexpr void buffer_copy_safe(mutable_buffer dest, const_buffer src) noexcept {
+    if (std::less<>{}(dest.data(), src.data())) {
+        ll_buffer_copy_forward(dest, src);
+    } else {
+        ll_buffer_copy_backward(dest, src);
+    }
+}
+
+template <typename T>
+concept ll_buffer_copy_fn = neo::invocable<T, mutable_buffer, const_buffer>&& trivially_copyable<T>;
+
+/**
  * Copy data from the source buffer into the destination buffer, with a maximum of `max_copy`. The
  * actual number of bytes that are copied is the minimum of the buffer sizes and `max_copy`. The
- * number of bytes copied is returned.
+ * number of bytes copied is returned. The `copy` parameter is the low-level buffer copying
+ * function.
  */
+template <ll_buffer_copy_fn Copy>
 constexpr std::size_t
-buffer_copy(mutable_buffer dest, const_buffer src, std::size_t max_copy) noexcept {
+buffer_copy(mutable_buffer dest, const_buffer src, std::size_t max_copy, Copy copy) noexcept {
     // Calculate how much we should copy in this operation. It will be the minimum of the buffer
     // sizes and the maximum bytes we want to copy
     const auto n_to_copy = (std::min)(src.size(), (std::min)(dest.size(), max_copy));
     // Do the copy!
-    auto in  = src.data();
-    auto out = dest.data();
-    for (auto r = n_to_copy; r; --r, ++in, ++out) {
-        *out = *in;
-    }
+    copy(dest.first(n_to_copy), src.first(n_to_copy));
     return n_to_copy;
 }
 
 // Catch copying from mutable->mutable and call the overload of const->mutable
+template <ll_buffer_copy_fn Copy>
 constexpr std::size_t
-buffer_copy(mutable_buffer dest, mutable_buffer src, std::size_t max_copy) noexcept {
-    return buffer_copy(dest, const_buffer(src), max_copy);
+buffer_copy(mutable_buffer dest, mutable_buffer src, std::size_t max_copy, Copy copy) noexcept {
+    return buffer_copy(dest, const_buffer(src), max_copy, copy);
 }
 
 /**
@@ -39,53 +94,22 @@ buffer_copy(mutable_buffer dest, mutable_buffer src, std::size_t max_copy) noexc
  * bytes. The operation is bounds-checked, and the number of bytes copied is
  * returned.
  */
-template <mutable_buffer_sequence MutableSeq, const_buffer_sequence ConstSeq>
+template <mutable_buffer_sequence Dest, const_buffer_sequence Source, ll_buffer_copy_fn Copy>
 constexpr std::size_t
-buffer_copy(const MutableSeq& dest, const ConstSeq& src, std::size_t max_copy) noexcept {
+buffer_copy(Dest&& dest, Source&& src, std::size_t max_copy, Copy copy) noexcept {
+    buffer_sequence_consumer in{src};
+    buffer_sequence_consumer out{dest};
     // Keep count of how many bytes remain
-    auto remaining_to_copy = max_copy;
-    // And how many bytes we have copied so far (to return later)
-    std::size_t total_copied = 0;
-    // Iterators into the destination
-    auto       dest_iter = buffer_sequence_begin(dest);
-    const auto dest_stop = buffer_sequence_end(dest);
-    // Iterators from the source
-    auto       src_iter = buffer_sequence_begin(src);
-    const auto src_stop = buffer_sequence_end(src);
-
-    // Because buffers may be unaligned, we need to keep track of if we are
-    // part of the way into either buffer.
-    std::size_t src_offset  = 0;
-    std::size_t dest_offset = 0;
-
-    // We copied buffers in pairs and advance the iterators as we consume them.
-    while (dest_iter != dest_stop && src_iter != src_stop && remaining_to_copy) {
-        // The source buffer, with our offset prefix removed:
-        const_buffer src_buf = *src_iter + src_offset;
-        // The dest buffer, with the offset prefix removed:
-        mutable_buffer dest_buf = *dest_iter + dest_offset;
-
-        // Do the copY
-        const std::size_t n_copied = buffer_copy(dest_buf, src_buf, remaining_to_copy);
-        // Accumulate
-        total_copied += n_copied;
-        // Decrement our remaining
+    auto        remaining_to_copy = max_copy;
+    std::size_t total_copied      = 0;
+    while (remaining_to_copy && !in.empty() && !out.empty()) {
+        const std::size_t n_copied
+            = buffer_copy(out.next_contiguous(), in.next_contiguous(), remaining_to_copy, copy);
+        in.consume(n_copied);
+        out.consume(n_copied);
         remaining_to_copy -= n_copied;
-        // Advance the offsets
-        src_offset += n_copied;
-        dest_offset += n_copied;
-        // If we've exhausted either buffer, advance the corresponding iterator and set the its
-        // buffer offset back to zero.
-        if (src_buf.size() == n_copied) {
-            ++src_iter;
-            src_offset = 0;
-        }
-        if (dest_buf.size() == n_copied) {
-            ++dest_iter;
-            dest_offset = 0;
-        }
+        total_copied += n_copied;
     }
-
     return total_copied;
 }
 
@@ -97,12 +121,19 @@ buffer_copy(const MutableSeq& dest, const ConstSeq& src, std::size_t max_copy) n
  * This overload is guaranteed to exhaust at least one of the source or
  * destination buffers.
  */
-template <mutable_buffer_sequence MutableSeq, const_buffer_sequence ConstSeq>
-constexpr std::size_t buffer_copy(const MutableSeq& dest, const ConstSeq& src) noexcept {
-    auto src_size  = buffer_size(src);
-    auto dest_size = buffer_size(dest);
-    auto min_size  = (src_size > dest_size) ? dest_size : src_size;
-    return buffer_copy(dest, src, min_size);
+template <mutable_buffer_sequence Dest, const_buffer_sequence Source>
+constexpr std::size_t buffer_copy(Dest&& dest, Source&& src) noexcept {
+    return buffer_copy(dest, src, buffer_copy_safe);
+}
+
+template <mutable_buffer_sequence Dest, const_buffer_sequence Source>
+constexpr std::size_t buffer_copy(Dest&& dest, Source&& src, std::size_t max_copy) noexcept {
+    return buffer_copy(dest, src, max_copy, buffer_copy_safe);
+}
+
+template <mutable_buffer_sequence Dest, const_buffer_sequence Source, ll_buffer_copy_fn Copy>
+constexpr auto buffer_copy(Dest&& dest, Source&& src, Copy copy) noexcept {
+    return buffer_copy(dest, src, std::numeric_limits<std::size_t>::max(), copy);
 }
 
 }  // namespace neo
