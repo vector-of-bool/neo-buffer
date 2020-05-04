@@ -1,7 +1,7 @@
 #pragma once
 
 #include <neo/as_buffer.hpp>
-#include <neo/buffer_algorithm.hpp>
+#include <neo/buffer_algorithm/size.hpp>
 #include <neo/static_buffer_vector.hpp>
 
 namespace neo {
@@ -30,7 +30,7 @@ private:
     constexpr static std::size_t _small_size = 16;
 
 public:
-    template <const_buffer_sequence Seq>
+    template <decays_to<BaseSequence> Seq>
     constexpr explicit buffer_sequence_consumer(Seq&& seq)
         : _seq_it(buffer_sequence_begin(seq))
         , _seq_stop(buffer_sequence_end(seq))
@@ -113,6 +113,6 @@ public:
 };
 
 template <typename T>
-buffer_sequence_consumer(T) -> buffer_sequence_consumer<T>;
+buffer_sequence_consumer(T &&) -> buffer_sequence_consumer<std::remove_reference_t<T>>;
 
 }  // namespace neo

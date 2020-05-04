@@ -1,5 +1,7 @@
 #include <neo/buffer_sequence_consumer.hpp>
 
+#include <neo/buffer_algorithm/copy.hpp>
+
 #include <catch2/catch.hpp>
 
 using namespace std::literals;

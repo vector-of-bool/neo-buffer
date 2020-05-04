@@ -83,7 +83,8 @@ private:
 public:
     constexpr bytewise_iterator() = default;
 
-    constexpr explicit bytewise_iterator(const Buffers& bufs)
+    template <decays_to<Buffers> Arg>
+    constexpr explicit bytewise_iterator(Arg&& bufs)
         : _cur(buffer_sequence_begin(bufs))
         , _stop(buffer_sequence_end(bufs)) {
         // Find the first non-zero buffer
@@ -296,6 +297,6 @@ public:
 };
 
 template <typename T>
-bytewise_iterator(T) -> bytewise_iterator<T>;
+bytewise_iterator(T &&) -> bytewise_iterator<std::remove_reference_t<T>>;
 
 }  // namespace neo

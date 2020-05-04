@@ -24,12 +24,16 @@ struct proto_mutable_buffer_sequence {
 // clang-format off
 
 template <typename T>
-    requires requires (T t) { buffer_sequence_begin(std::as_const(t)); }
-using buffer_sequence_iterator_t = decltype(buffer_sequence_begin(std::as_const(std::declval<T&>())));
+    requires requires (T&& t) {
+        buffer_sequence_begin(NEO_FWD(t));
+    }
+using buffer_sequence_iterator_t = decltype(buffer_sequence_begin(std::declval<T&>()));
 
 template <typename T>
-    requires requires (T t) { buffer_sequence_end(std::as_const(t)); }
-using buffer_sequence_sentinel_t = decltype(buffer_sequence_end(std::as_const(std::declval<T&>())));
+    requires requires (T&& t) {
+        buffer_sequence_end(NEO_FWD(t));
+    }
+using buffer_sequence_sentinel_t = decltype(buffer_sequence_end(std::declval<T&>()));
 
 template <typename T>
 concept const_buffer_sequence =
