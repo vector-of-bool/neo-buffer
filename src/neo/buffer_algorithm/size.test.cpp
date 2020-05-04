@@ -1,4 +1,4 @@
-#include <neo/buffer_algorithm.hpp>
+#include <neo/buffer_algorithm/size.hpp>
 
 #include <catch2/catch.hpp>
 
