@@ -63,7 +63,9 @@ public:
     }
 
     [[nodiscard]] constexpr buffer_type next_contiguous() const noexcept {
-        assert(_seq_it != _seq_stop);
+        if (_seq_it == _seq_stop) {
+            return buffer_type();
+        }
         return *_seq_it + _elem_offset;
     }
 
