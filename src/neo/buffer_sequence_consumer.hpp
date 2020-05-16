@@ -32,7 +32,7 @@ private:
     constexpr static std::size_t _small_size = 16;
 
 public:
-    template <decays_to<BaseSequence> Seq>
+    template <alike<BaseSequence> Seq>
     constexpr explicit buffer_sequence_consumer(Seq&& seq)
         : _seq_it(buffer_sequence_begin(seq))
         , _seq_stop(buffer_sequence_end(seq))
@@ -96,7 +96,7 @@ public:
     }
 };
 
-template <as_buffer_convertible T>
+template <single_buffer T>
 class buffer_sequence_consumer<T> {
 public:
     using buffer_type = as_buffer_t<T>;
