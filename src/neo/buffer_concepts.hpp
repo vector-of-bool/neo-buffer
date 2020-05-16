@@ -59,6 +59,15 @@ concept mutable_buffer_sequence =
 
 static_assert(mutable_buffer_sequence<proto_mutable_buffer_sequence>);
 
+template <typename T>
+concept single_const_buffer = const_buffer_sequence<T> && alike<T, const_buffer>;
+
+template <typename T>
+concept single_mutable_buffer = mutable_buffer_sequence<T> && alike<T, mutable_buffer>;
+
+template <typename T>
+concept single_buffer = single_mutable_buffer<T> || single_const_buffer<T>;
+
 // clang-format on
 
 }  // namespace neo
