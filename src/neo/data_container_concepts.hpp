@@ -23,7 +23,7 @@ using data_pointer_t = decltype(std::data(std::declval<Container&>()));
  * if it is a `const` instance of said container.
  */
 template <typename Container>
-using const_data_pointer_t = data_pointer_t<const std::remove_reference_t<Container>>;
+using const_data_pointer_t = decltype(std::data(std::as_const(std::declval<Container&>())));
 
 /**
  * Get the value type of the container.
@@ -43,9 +43,9 @@ constexpr auto data_type_size_v = sizeof(data_type_t<C>);
  */
 template <typename C>
 concept data_container =
-    std::is_trivial_v<data_type_t<C>> &&
-    requires (const C& c) {
-        { neo::byte_pointer(std::data(c)) } -> convertible_to<const std::byte*>;
+    buffer_safe<data_type_t<C>> &&
+    requires (const C& c, data_pointer_t<C> ptr) {
+        { neo::byte_pointer(ptr) } -> convertible_to<const std::byte*>;
         { std::size(c) } -> convertible_to<std::size_t>;
     };
 
@@ -64,8 +64,8 @@ static_assert(data_container<proto_data_container>);
 template <typename C>
 concept mutable_data_container =
     data_container<C> &&
-    requires (C& c) {
-        { neo::byte_pointer(std::data(c)) } -> same_as<std::byte*>;
+    requires (data_pointer_t<C> ptr) {
+        { neo::byte_pointer(ptr) } -> same_as<std::byte*>;
     };
 
 /**
