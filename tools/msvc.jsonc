@@ -1,4 +1,4 @@
 {
     "compiler_id": "msvc",
-    "flags": "/std:c++latest"
+    "flags": "/std:c++latest /experimental:preprocessor"
 }
