@@ -7,7 +7,8 @@
 #include <neo/dynamic_buffer.hpp>
 #include <neo/mutable_buffer.hpp>
 
-#include <cassert>
+#include <neo/assert.hpp>
+
 #include <cstdint>
 #include <iterator>
 #include <limits>
@@ -372,7 +373,12 @@ public:
 
     [[nodiscard]] constexpr const_buffers_type data(size_type position,
                                                     size_type size_) const noexcept {
-        assert(position <= size());
+        neo_assert(expects,
+                   position <= size(),
+                   "Attempted to access data beyond-the-end of a bytes object",
+                   position,
+                   size_,
+                   size());
         const auto remaining = size() - position;
         const auto minsize   = (size_ < remaining) ? size_ : remaining;
         return const_buffers_type(_bytes->data() + position, minsize);
@@ -380,7 +386,12 @@ public:
 
     [[nodiscard]] constexpr mutable_buffers_type data(size_type position,
                                                       size_type size_) noexcept {
-        assert(position <= size());
+        neo_assert(expects,
+                   position <= size(),
+                   "Attempted to access data beyond-the-end of a bytes object",
+                   position,
+                   size_,
+                   size());
         const auto remaining = size() - position;
         const auto minsize   = (size_ < remaining) ? size_ : remaining;
         return mutable_buffers_type(_bytes->data() + position, minsize);
@@ -407,7 +418,11 @@ public:
             *dest = *src;
         }
 
-        assert(to_remove <= size());
+        neo_assert(invariant,
+                   to_remove <= size(),
+                   "Should never remove more bytes than are available.",
+                   to_remove,
+                   size());
         const auto new_size = size() - to_remove;
         resize(new_size);
     }

@@ -3,7 +3,8 @@
 #include <neo/data_container_concepts.hpp>
 #include <neo/detail/single_buffer_iter.hpp>
 
-#include <cassert>
+#include <neo/assert.hpp>
+
 #include <utility>
 
 namespace neo::detail {
@@ -61,7 +62,11 @@ public:
      * Remove the first `n` bytes from the buffer
      */
     constexpr void remove_prefix(size_type n) noexcept {
-        assert(n <= size() && "buffer.remove_prefix(n) : `n` is greater than size()");
+        neo_assert(expects,
+                   n <= size(),
+                   "Cannot remove more bytes from a buffer than it has available",
+                   n,
+                   size());
         _data += n;
         _size -= n;
     }
@@ -70,7 +75,11 @@ public:
      * Remove the trailing `n` bytes from the buffer
      */
     constexpr void remove_suffix(size_type n) noexcept {
-        assert(n <= size() && "buffer.remove_suffix(n) : `n` is greater than size()");
+        neo_assert(expects,
+                   n <= size(),
+                   "Cannot remove more bytes from a buffer than it has available",
+                   n,
+                   size());
         _size -= n;
     }
 
@@ -87,7 +96,7 @@ public:
      */
     [[nodiscard]] constexpr std::remove_pointer_t<pointer>&
     operator[](size_type offset) const noexcept {
-        assert(offset < size() && "buffer[n] : Given `n` is past-the-end");
+        neo_assert(expects, offset < size(), "Buffer index is out-of-range", offset, size());
         return data()[offset];
     }
 
@@ -96,7 +105,11 @@ public:
      * The given size must be less than or equal-to size()
      */
     [[nodiscard]] constexpr ThisType first(size_type s) const noexcept {
-        assert(s <= size() && "buffer.first(n) : Given `n` is greater than size()");
+        neo_assert(expects,
+                   s <= size(),
+                   "Cannot take slice of buffer with size greater than the buffer's size",
+                   s,
+                   size());
         return ThisType(_data, s);
     }
 
@@ -105,7 +118,11 @@ public:
      * The given size must be less than or equal-to size()
      */
     [[nodiscard]] constexpr ThisType last(size_type s) const noexcept {
-        assert(s <= size() && "buffer.last(n) : Given `n` is greater than size()");
+        neo_assert(expects,
+                   s <= size(),
+                   "Cannot take slice of buffer with size greater than the buffer's size",
+                   s,
+                   size());
         auto off = _size - s;
         return *this + off;
     }
@@ -114,7 +131,11 @@ public:
      * Split the buffer in two, partitioning an `part`.
      */
     [[nodiscard]] constexpr std::pair<ThisType, ThisType> split(size_type part) const noexcept {
-        assert(part <= size() && "neo::buffer::split(n) : Given `n` is greater than size()");
+        neo_assert(expects,
+                   part <= size(),
+                   "Cannot partition a buffer past-the-end of the buffer",
+                   part,
+                   size());
         auto left  = first(part);
         auto right = last(size() - part);
         return {left, right};
@@ -139,7 +160,7 @@ public:
     requires constructible_from<String, ThisType> &&
              equality_comparable<String>
     constexpr bool equals_string(const String& s) const noexcept {
-        return String(static_cast<const ThisType>(*this)) == s;
+        return String(static_cast<const ThisType&>(*this)) == s;
     }
 
     template <const_buffer_constructible T>

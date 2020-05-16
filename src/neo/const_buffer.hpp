@@ -7,7 +7,6 @@
 
 #include <neo/concepts.hpp>
 
-#include <cassert>
 #include <cstddef>
 
 namespace neo {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <neo/assert.hpp>
 #include <neo/buffer_concepts.hpp>
 #include <neo/bytewise_iterator.hpp>
 
@@ -49,7 +50,10 @@ public:
      * Read the next n_bits from the buffer, but don't change the read position
      */
     constexpr std::uint64_t peek(std::size_t count) const noexcept {
-        assert(count <= 64 && "neo::buffer_bits::peek() : `count` must be less than 65");
+        neo_assert(expects,
+                   count <= 64,
+                   "`count` must be less than 65 (The maximum size of portable integers)",
+                   count);
 
         // Calc how many bits remain in the current byte
         const auto bits_left = 8u - _bit_pos;
@@ -95,7 +99,10 @@ public:
      * Put the low `count` bits from `bits` into the output
      */
     constexpr void set(std::uint64_t bits, std::size_t count) noexcept {
-        assert(count <= 64 && "neo::buffer_bits::set() : `count` must be less than 65");
+        neo_assert(expects,
+                   count <= 64,
+                   "`count` must be less than 65 (The maximum size of portable integers)",
+                   count);
 
         auto bits_left = 8u - _bit_pos;
 
@@ -162,12 +169,14 @@ public:
         _it += int(remain >= (8u - _bit_pos));
         _bit_pos = (_bit_pos + remain) % 8;
     }
-
     /**
      * Read and advance by `count` bits
      */
     constexpr std::uint64_t read(std::size_t count) noexcept {
-        assert(count <= 64 && "neo::buffer_bits::read() : `count` must be less than 65");
+        neo_assert(expects,
+                   count <= 64,
+                   "`count` must be less than 65 (The maximum size of portable integers)",
+                   count);
         auto r = peek(count);
         skip(count);
         return r;
@@ -177,7 +186,10 @@ public:
      * Set the low `count` bits from `bits` into the output and advance by `count` bits.
      */
     constexpr void write(std::uint64_t bits, std::size_t count) noexcept {
-        assert(count <= 64 && "neo::buffer_bits::put() : `count` must be less than 65");
+        neo_assert(expects,
+                   count <= 64,
+                   "`count` must be less than 65 (The maximum size of portable integers)",
+                   count);
         set(bits, count);
         skip(count);
     }

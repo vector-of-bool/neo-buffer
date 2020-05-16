@@ -4,6 +4,7 @@
 #include <neo/buffer_concepts.hpp>
 #include <neo/buffer_seq_iter.hpp>
 
+#include <neo/assert.hpp>
 #include <neo/iterator_concepts.hpp>
 
 #include <iterator>
@@ -39,7 +40,10 @@ private:
 
     void _advance(std::size_t off) noexcept {
         // Check for iterating past-the end
-        assert(_cur != _stop);
+        neo_assert(expects,
+                   _cur != _stop,
+                   "Attempted to read beyond-the-end of a buffer through a bytewise_iterator",
+                   off);
         // Calc the number of bytes remaining in the current buffer
         auto remaining_in_buf = _buf().size() - _cur_buf_pos;
         // Check if we are going to run off-the-end of the current buffer:
@@ -64,7 +68,11 @@ private:
     }
 
     void _rewind(std::size_t off) noexcept requires bidirectional_iterator<inner_iter_type> {
-        assert(_abs_pos != 0);
+        neo_assert(expects,
+                   _abs_pos != 0,
+                   "Attempted to rewind to beyond-the-beginning of a a buffer through a "
+                   "bytewise_iterator",
+                   off);
         // Check if we are about to step behind the bottom of the current buffer
         const auto buf_pos = _cur_buf_pos;
         if (off <= buf_pos) {
@@ -83,7 +91,7 @@ private:
 public:
     constexpr bytewise_iterator() = default;
 
-    template <decays_to<Buffers> Arg>
+    template <alike<Buffers> Arg>
     constexpr explicit bytewise_iterator(Arg&& bufs)
         : _cur(buffer_sequence_begin(bufs))
         , _stop(buffer_sequence_end(bufs)) {
@@ -186,8 +194,7 @@ public:
 };
 
 // clang-format off
-template <typename T>
-    requires const_buffer_sequence<T> && as_buffer_convertible<T>
+template <single_buffer T>
 class bytewise_iterator<T> {
     // clang-format on
 public:
@@ -204,11 +211,14 @@ private:
     buffer_type _buf;
     std::size_t _idx = 0;
 
-    void _adv(difference_type diff) {
+    constexpr void _adv(difference_type diff) {
         if (diff < 0 && static_cast<std::size_t>(-diff) > _idx) {
-            assert(false && "Bytewise iterator rewind before the beginning of the buffer.");
+            neo_assert(expects,
+                       false,
+                       "Bytewise iterator rewind before the beginning of the buffer.",
+                       diff);
         } else if (static_cast<difference_type>(_buf.size() - _idx) < diff) {
-            assert(false && "Advancing bytewise iteator beyond end of the buffer");
+            neo_assert(expects, false, "Advancing bytewise iteator beyond end of the buffer", diff);
         }
         _idx += diff;
     }
@@ -216,7 +226,7 @@ private:
 public:
     constexpr bytewise_iterator() = default;
 
-    template <as_buffer_convertible A>
+    template <alike<T> A>
     constexpr explicit bytewise_iterator(A&& b)
         : _buf(neo::as_buffer(b)) {}
 

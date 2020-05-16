@@ -4,7 +4,6 @@
 #include <neo/detail/buffer_base.hpp>
 #include <neo/detail/single_buffer_iter.hpp>
 
-#include <cassert>
 #include <cstddef>
 #include <iterator>
 #include <type_traits>

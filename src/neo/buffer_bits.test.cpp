@@ -23,6 +23,10 @@ TEST_CASE("View the bits in a buffer") {
     // Copy:
     auto bits2 = bits;
 
+    // Read the entire thing at once
+    CHECK(bits.read(32) == 0b1101'1001'1100'1011'0011'1001'1001'1111);
+
+    bits = bits2;
     CHECK(bits.read(3) == 0b110);
     CHECK(bits.read(3) == 0b110);
     CHECK(bits.read(3) == 0b011);
@@ -43,6 +47,15 @@ TEST_CASE("View the bits in a buffer") {
     bits = bits2;
     bits.skip(4);
     CHECK(bits.read(16) == 0b1001'1100'1011'0011);
+
+    // Read three bits, then skip to the boundary
+    bits = bits2;
+    CHECK(bits.read(3) == 0b110);
+    bits.skip_to_byte_boundary();
+    bits.skip_to_byte_boundary();  // Multiple calls do nothing
+    bits.skip_to_byte_boundary();
+    bits.skip_to_byte_boundary();
+    CHECK(bits.read(8) == 0b1100'1011);
 }
 
 TEST_CASE("Set the bits in a buffer") {

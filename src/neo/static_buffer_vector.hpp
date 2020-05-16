@@ -2,8 +2,9 @@
 
 #include "./buffer_concepts.hpp"
 
-#include <cassert>
 #include <cstddef>
+
+#include <neo/assert.hpp>
 
 namespace neo {
 
@@ -39,19 +40,22 @@ struct static_buffer_vector {
     constexpr iterator       end() noexcept { return begin() + active_count; }
 
     constexpr reference push_back(buffer_type b) noexcept {
-        assert(size() < max_size() && "static_buffer_vector::push_back() pushed too many elements");
+        neo_assert(expects,
+                   size() < max_size(),
+                   "Pushed too many elements into a statically-sized vector",
+                   max_size());
         auto& ret = buffers[size()] = b;
         ++active_count;
         return ret;
     }
 
     constexpr reference operator[](std::size_t idx) noexcept {
-        assert(idx < size());
+        neo_assert(expects, idx < size(), "Index out-of-range", idx, size());
         return buffers[idx];
     }
 
     constexpr const_reference operator[](std::size_t idx) const noexcept {
-        assert(idx < size());
+        neo_assert(expects, idx < size(), "Index out-of-range", idx, size());
         return buffers[idx];
     }
 };

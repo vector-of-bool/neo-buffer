@@ -4,6 +4,8 @@
 #include <neo/buffer_algorithm/size.hpp>
 #include <neo/static_buffer_vector.hpp>
 
+#include <neo/assert.hpp>
+
 namespace neo {
 
 /**
@@ -70,7 +72,12 @@ public:
     }
 
     constexpr void consume(std::size_t size) noexcept {
-        assert(size <= bytes_remaining());
+        neo_assert(
+            expects,
+            size <= bytes_remaining(),
+            "Attempted to consume more bytes than are available in a buffer_sequence_consumer",
+            size,
+            bytes_remaining());
         _size_remaining -= size;
         while (_seq_it != _seq_stop && size != 0) {
             auto buf = next_contiguous();
