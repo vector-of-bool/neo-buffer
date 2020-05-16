@@ -1,8 +1,9 @@
+#include <neo/buffer_algorithm/copy.hpp>
 #include <neo/buffer_algorithm/size.hpp>
 
 #include <catch2/catch.hpp>
 
-#include <neo/buffer.hpp>
+#include <neo/as_buffer.hpp>
 #include <neo/const_buffer.hpp>
 #include <neo/mutable_buffer.hpp>
 
