@@ -124,26 +124,25 @@ constexpr inline _buffer_sequence_begin_fn buffer_sequence_begin;
 
 namespace detail {
 
+// clang-format off
 template <typename T>
 concept has_nonmember_bufseq_end = requires(T t) {
-    buffer_sequence_end(t);
-    { neo::buffer_sequence_begin(t) != buffer_sequence_end(t) }
-    ->neo::simple_boolean;
+    buffer_sequence_end(NEO_FWD(t));
+    { neo::buffer_sequence_begin(NEO_FWD(t)) != buffer_sequence_end(NEO_FWD(t)) } -> neo::simple_boolean;
 };
 
 template <typename T>
 concept has_member_bufseq_end = requires(T t) {
-    t.buffer_sequence_end();
-    { neo::buffer_sequence_begin(t) != t.buffer_sequence_end() }
-    ->neo::simple_boolean;
+    NEO_FWD(t).buffer_sequence_end();
+    { neo::buffer_sequence_begin(NEO_FWD(t)) != NEO_FWD(t).buffer_sequence_end() } -> neo::simple_boolean;
 };
 
 template <typename T>
 concept has_member_end_bufseq = requires(T t) {
-    t.end();
-    { neo::buffer_sequence_begin(t) != t.end() }
-    ->neo::simple_boolean;
+    NEO_FWD(t).end();
+    { neo::buffer_sequence_begin(NEO_FWD(t)) != NEO_FWD(t).end() } -> neo::simple_boolean;
 };
+// clang-format on
 
 }  // namespace detail
 
