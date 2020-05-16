@@ -169,6 +169,19 @@ public:
         _it += int(remain >= (8u - _bit_pos));
         _bit_pos = (_bit_pos + remain) % 8;
     }
+
+    /**
+     * Get the number of bits remaining until the byte boundary. (May return zero)
+     */
+    constexpr int bit_offset() const noexcept { return ((8 - _bit_pos) % 8); }
+
+    /**
+     * Skip trailing bits until the next byte boundary.
+     *
+     * Won't advance over a whole byte, so calling multiple times in sequence will have no effect.
+     */
+    constexpr void skip_to_byte_boundary() noexcept { skip(bit_offset()); }
+
     /**
      * Read and advance by `count` bits
      */
