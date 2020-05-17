@@ -150,10 +150,17 @@ struct buffer_copy_transform_result {
     }
 };
 
-template <ll_buffer_copy_fn Copy
-          = decltype([](std::byte* dest, const std::byte* src, std::size_t s) {
-                ll_buffer_copy_safe(dest, src, s);
-            })>
+namespace detail {
+
+struct default_ll_copy {
+    constexpr void operator()(std::byte* dest, const std::byte* src, std::size_t s) const noexcept {
+        ll_buffer_copy_safe(dest, src, s);
+    }
+};
+
+}  // namespace detail
+
+template <ll_buffer_copy_fn Copy = detail::default_ll_copy>
 class buffer_copy_transformer {
     [[no_unique_address]] Copy _ll_copy;
 

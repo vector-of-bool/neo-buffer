@@ -19,16 +19,15 @@ concept buffer_transform_result =
     semiregular<T> &&
     requires(const T c_res, T res) {
         { res += c_res } noexcept;
-        { c_res.bytes_written } -> same_as<std::size_t>;
-        { c_res.bytes_read } -> same_as<std::size_t>;
-        { c_res.done } -> same_as<bool>;
+        { c_res.bytes_written } -> alike<std::size_t>;
+        { c_res.bytes_read } -> alike<std::size_t>;
+        { c_res.done } -> alike<bool>;
     };
 
 template <typename T, typename... MoreArgs>
 concept buffer_transformer =
-    requires(T tr, const_buffer cbuf, mutable_buffer mbuf, MoreArgs&&... args) {
-        { tr(mbuf, cbuf, NEO_FWD(args)...) } -> buffer_transform_result;
-    };
+    invocable<T, mutable_buffer, const_buffer, MoreArgs...> &&
+    buffer_transform_result<std::invoke_result_t<T, mutable_buffer, const_buffer, MoreArgs...>>;
 // clang-format on
 
 template <typename T>
@@ -36,7 +35,7 @@ constexpr std::size_t buffer_transform_dynamic_growth_hint_v = 1024;
 
 template <typename T, typename... Args>
 using buffer_transform_result_t
-    = decltype(std::declval<T&>()(mutable_buffer(), const_buffer(), std::declval<Args&&>()...));
+    = decltype(std::declval<T>()(mutable_buffer(), const_buffer(), std::declval<Args&&>()...));
 
 struct proto_buffer_transform_result {
     proto_buffer_transform_result& operator+=(const proto_buffer_transform_result&) noexcept;

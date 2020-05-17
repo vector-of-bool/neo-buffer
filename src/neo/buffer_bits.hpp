@@ -34,10 +34,6 @@ class buffer_bits {
         return static_cast<std::byte>((1 << n) - 1);
     }
 
-    constexpr auto _set(auto it, std::byte b, std::size_t skip_bits, std::uint8_t n_bits) noexcept {
-        return it;
-    }
-
 public:
     constexpr buffer_bits() = default;
     constexpr buffer_bits(const Bufs& b)
@@ -140,8 +136,7 @@ public:
 
         // Set entire bytes
         while (count >= 8u) {
-            auto new_bits = (bits >> (count - bits_left)) & 0xff;
-            *it           = std::byte(new_bits);
+            *it = std::byte((bits >> (count - bits_left)) & 0xff);
             ++it;
             count -= 8;
         }
