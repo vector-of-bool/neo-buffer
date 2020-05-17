@@ -13,7 +13,7 @@ jobs:
           pwsh -noni -c iwr https://github.com/vector-of-bool/dds/releases/download/0.1.0-alpha.3/dds-win-x64.exe -OutFile dds.exe || exit 1
           echo Build
           .\dds catalog add neo-concepts@0.3.1 --git-url https://github.com/vector-of-bool/neo-concepts.git --git-ref 0.3.1
-          .\dds catalog add neo-fun@0.2.0 --git-url https://github.com/vector-of-bool/neo-fun.git --git-ref 0.2.0
+          .\dds catalog add neo-fun@0.2.1 --git-url https://github.com/vector-of-bool/neo-fun.git --git-ref 0.2.1
           .\dds.exe build -t tools/msvc.jsonc
         displayName: Build and Run Unit Tests
 
@@ -29,7 +29,7 @@ jobs:
           curl -L https://github.com/vector-of-bool/dds/releases/download/0.1.0-alpha.3/dds-linux-x64 -o dds
           chmod +x dds
           ./dds catalog add neo-concepts@0.3.1 --git-url https://github.com/vector-of-bool/neo-concepts.git --git-ref 0.3.1
-          ./dds catalog add neo-fun@0.2.0 --git-url https://github.com/vector-of-bool/neo-fun.git --git-ref 0.2.0
+          ./dds catalog add neo-fun@0.2.1 --git-url https://github.com/vector-of-bool/neo-fun.git --git-ref 0.2.1
         displayName: Prepare System
       - script: ./dds build -t tools/gcc-9.jsonc
         displayName: Build and Run Unit Tests
@@ -45,7 +45,7 @@ jobs:
           curl -L https://github.com/vector-of-bool/dds/releases/download/0.1.0-alpha.3/dds-macos-x64 -o dds
           chmod +x dds
           ./dds catalog add neo-concepts@0.3.1 --git-url https://github.com/vector-of-bool/neo-concepts.git --git-ref 0.3.1
-          ./dds catalog add neo-fun@0.2.0 --git-url https://github.com/vector-of-bool/neo-fun.git --git-ref 0.2.0
+          ./dds catalog add neo-fun@0.2.1 --git-url https://github.com/vector-of-bool/neo-fun.git --git-ref 0.2.1
         displayName: Prepare System
       - script: ./dds build -t tools/gcc-9.jsonc
         displayName: Build and Run Unit Tests
