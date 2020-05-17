@@ -1,12 +1,12 @@
 #pragma once
 
-#include <neo/buffer_concepts.hpp>
-#include <neo/buffer_sequence_consumer.hpp>
+#include <neo/buffer_range_consumer.hpp>
 #include <neo/dynamic_buffer.hpp>
 #include <neo/io_buffer.hpp>
 
 #include <neo/assert.hpp>
 #include <neo/fwd.hpp>
+#include <neo/ref.hpp>
 #include <neo/test_concept.hpp>
 
 #include <functional>
@@ -35,7 +35,7 @@ constexpr std::size_t buffer_transform_dynamic_growth_hint_v = 1024;
 
 template <typename T, typename... Args>
 using buffer_transform_result_t
-    = decltype(std::declval<T>()(mutable_buffer(), const_buffer(), std::declval<Args&&>()...));
+    = decltype(ref_v<T>(mutable_buffer(), const_buffer(), ref_v<Args>...));
 
 struct proto_buffer_transform_result {
     proto_buffer_transform_result& operator+=(const proto_buffer_transform_result&) noexcept;
@@ -61,15 +61,15 @@ static_assert(buffer_transformer<proto_buffer_transformer>);
  * sequences, no dynamic resizing required. Other buffer_transform overloads
  * are implemented in terms of multiple calls to this base case.
  */
-template <mutable_buffer_sequence Out,
-          const_buffer_sequence   In,
+template <mutable_buffer_range Out,
+          buffer_range         In,
           typename... Args,
           buffer_transformer<Args...> Tr>
 constexpr auto buffer_transform(Tr&& tr, Out&& out_, In&& in_, Args&&... args) {
     using result_type = buffer_transform_result_t<Tr, Args...>;
-    buffer_sequence_consumer out{out_};
-    buffer_sequence_consumer in{in_};
-    result_type              acc_res;
+    buffer_range_consumer out{out_};
+    buffer_range_consumer in{in_};
+    result_type           acc_res;
 
     while (true) {
         auto part_out = out.next_contiguous();
@@ -127,7 +127,7 @@ constexpr auto buffer_transform(Tr&& tr, Out&& out_, In&& in_, Args&&... args) {
  */
 template <typename... Args,
           dynamic_output_buffer       Out,
-          const_buffer_sequence       In,
+          buffer_range                In,
           buffer_transformer<Args...> Tr>
 constexpr auto buffer_transform(Tr&& tr, Out&& out, In&& in_, Args&&... args) {
     // The actual final result type:
@@ -137,7 +137,7 @@ constexpr auto buffer_transform(Tr&& tr, Out&& out, In&& in_, Args&&... args) {
     static_assert(growth_size > 0);
 
     // The input consumer
-    buffer_sequence_consumer in{in_};
+    buffer_range_consumer in{in_};
     // The result accumulator
     result_type acc_res;
 
@@ -158,7 +158,7 @@ constexpr auto buffer_transform(Tr&& tr, Out&& out, In&& in_, Args&&... args) {
         // Prepare the next output area
         auto next_out_area = out.prepare(growth_size);
         // A consumer for that output area
-        buffer_sequence_consumer next_out{next_out_area};
+        buffer_range_consumer next_out{next_out_area};
         // Keep track of how much we actually transform on this loop step
         std::size_t n_written_this_step = 0;
 
@@ -230,10 +230,7 @@ constexpr auto buffer_transform(Tr&& tr, Out&& out, In&& in_, Args&&... args) {
  * `dyn_out` dynamic buffer. The `dyn_out` buffer will be extended. Prior
  * content in `dyn_out` will be untouched.
  */
-template <typename... Args,
-          dynamic_buffer              Out,
-          const_buffer_sequence       In,
-          buffer_transformer<Args...> Tr>
+template <typename... Args, dynamic_buffer Out, buffer_range In, buffer_transformer<Args...> Tr>
 constexpr auto buffer_transform(Tr&& tr, Out&& dyn_out, In&& in, Args&&... args) {
     dynamic_io_buffer_adaptor io{dyn_out};
     auto                      ret = buffer_transform(tr, io, in, std::forward<Args>(args)...);

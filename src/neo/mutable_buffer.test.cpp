@@ -1,12 +1,23 @@
-#include <neo/buffer_seq_iter.hpp>
 #include <neo/mutable_buffer.hpp>
+
+#include <neo/const_buffer.hpp>
 
 #include <catch2/catch.hpp>
 
 #include <iostream>
+#include <string>
 #include <string_view>
 
 using namespace std::string_view_literals;
+
+static_assert(neo::constructible_from<neo::mutable_buffer, std::string>);
+static_assert(!neo::constructible_from<neo::mutable_buffer, const std::string>);
+static_assert(!neo::constructible_from<neo::mutable_buffer, std::string_view>);
+static_assert(neo::constructible_from<neo::mutable_buffer, std::vector<int>>);
+static_assert(neo::constructible_from<neo::mutable_buffer, std::vector<int>&>);
+static_assert(!neo::constructible_from<neo::mutable_buffer, const std::vector<int>>);
+
+static_assert(!neo::constructible_from<neo::mutable_buffer, neo::const_buffer>);
 
 TEST_CASE("Default construct") {
     neo::mutable_buffer buf;
@@ -88,8 +99,8 @@ TEST_CASE("Single-buffer sequence") {
     std::string         str = "I am a string";
     neo::mutable_buffer buf{neo::byte_pointer(str.data()), str.size()};
 
-    auto it   = neo::buffer_sequence_begin(buf);
-    auto stop = neo::buffer_sequence_end(buf);
+    auto it   = std::begin(buf);
+    auto stop = std::end(buf);
     CHECK(it != stop);
     CHECK(it->size() == str.size());
     CHECK(std::string_view(*it) == str);

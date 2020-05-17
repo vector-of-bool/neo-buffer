@@ -20,6 +20,12 @@ public:
     template <mutable_data_container C>
     explicit constexpr mutable_buffer(C&& c) noexcept
         : buffer_base(byte_pointer(std::data(c)), data_container_byte_size(c)) {}
+
+    template <mutable_buffer_constructible T>
+    explicit constexpr operator T() const noexcept {
+        return T(static_cast<data_pointer_t<T>>(static_cast<void*>(data())),
+                 size() / data_type_size_v<T>);
+    }
 };
 
 }  // namespace neo

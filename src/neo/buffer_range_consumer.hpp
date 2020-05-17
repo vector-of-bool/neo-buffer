@@ -2,6 +2,7 @@
 
 #include <neo/as_buffer.hpp>
 #include <neo/buffer_algorithm/size.hpp>
+#include <neo/buffer_range.hpp>
 #include <neo/static_buffer_vector.hpp>
 
 #include <neo/assert.hpp>
@@ -9,18 +10,18 @@
 namespace neo {
 
 /**
- * A `buffer_sequence_consumer` is a utility type that can be used to consume
+ * A `buffer_range_consumer` is a utility type that can be used to consume
  * buffer sequences of unknown size with arbitrary step sizes.
  */
-template <typename BaseSequence>
-class buffer_sequence_consumer {
+template <buffer_range BaseRange>
+class buffer_range_consumer {
 private:
-    using inner_buffer_iterator = buffer_sequence_iterator_t<BaseSequence>;
-    using inner_buffer_sentinel = buffer_sequence_sentinel_t<BaseSequence>;
+    using inner_buffer_iterator = buffer_range_iterator_t<BaseRange>;
+    using inner_buffer_sentinel = buffer_range_sentinel_t<BaseRange>;
 
 public:
     /// The type of buffer that will be yielded by this consumer.
-    using buffer_type = iter_value_t<inner_buffer_iterator>;
+    using buffer_type = buffer_range_value_t<BaseRange>;
 
 private:
     inner_buffer_iterator _seq_it;
@@ -32,10 +33,10 @@ private:
     constexpr static std::size_t _small_size = 16;
 
 public:
-    template <alike<BaseSequence> Seq>
-    constexpr explicit buffer_sequence_consumer(Seq&& seq)
-        : _seq_it(buffer_sequence_begin(seq))
-        , _seq_stop(buffer_sequence_end(seq))
+    template <alike<BaseRange> Seq>
+    constexpr explicit buffer_range_consumer(Seq&& seq)
+        : _seq_it(std::begin(seq))
+        , _seq_stop(std::end(seq))
         , _size_remaining(buffer_size(seq)) {}
 
     [[nodiscard]] constexpr std::size_t bytes_remaining() const noexcept { return _size_remaining; }
@@ -72,12 +73,11 @@ public:
     }
 
     constexpr void consume(std::size_t size) noexcept {
-        neo_assert(
-            expects,
-            size <= bytes_remaining(),
-            "Attempted to consume more bytes than are available in a buffer_sequence_consumer",
-            size,
-            bytes_remaining());
+        neo_assert(expects,
+                   size <= bytes_remaining(),
+                   "Attempted to consume more bytes than are available in a buffer_range_consumer",
+                   size,
+                   bytes_remaining());
         _size_remaining -= size;
         while (_seq_it != _seq_stop && size != 0) {
             auto buf = next_contiguous();
@@ -97,7 +97,7 @@ public:
 };
 
 template <single_buffer T>
-class buffer_sequence_consumer<T> {
+class buffer_range_consumer<T> {
 public:
     using buffer_type = as_buffer_t<T>;
 
@@ -105,7 +105,7 @@ private:
     buffer_type _buf;
 
 public:
-    constexpr buffer_sequence_consumer(buffer_type b)
+    constexpr buffer_range_consumer(buffer_type b)
         : _buf(b) {}
 
     [[nodiscard]] constexpr auto prepare(std::size_t n) const noexcept {
@@ -120,6 +120,6 @@ public:
 };
 
 template <typename T>
-buffer_sequence_consumer(T &&) -> buffer_sequence_consumer<std::remove_reference_t<T>>;
+buffer_range_consumer(T &&) -> buffer_range_consumer<std::remove_reference_t<T>>;
 
 }  // namespace neo

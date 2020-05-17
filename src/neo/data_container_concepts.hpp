@@ -4,6 +4,7 @@
 
 #include <neo/concepts.hpp>
 #include <neo/iterator_concepts.hpp>
+#include <neo/ref.hpp>
 
 #include <iterator>
 #include <type_traits>
@@ -13,17 +14,23 @@ namespace neo {
 // clang-format off
 
 /**
- * Get the pointer type returned by the .data() method of the given container.
+ * Get the pointer type returned by the std::data of the given container.
  */
-template <typename Container>
-using data_pointer_t = decltype(std::data(std::declval<Container&>()));
+template <typename C>
+using data_pointer_t = decltype(std::data(ref_v<C>));
 
 /**
- * Get the pointer type returned by the .data() method of the given container
+ * Get the pointer type returned by the std::data of the given container
  * if it is a `const` instance of said container.
  */
+template <typename C>
+using const_data_pointer_t = decltype(std::data(cref_v<C>));
+
+/**
+ * Get the pointer-to-const that corresponds to the data_pointer_t of the given container
+ */
 template <typename Container>
-using const_data_pointer_t = decltype(std::data(std::as_const(std::declval<Container&>())));
+using data_pointer_to_const_t = std::add_pointer_t<std::add_const_t<std::remove_pointer_t<data_pointer_t<Container>>>>;
 
 /**
  * Get the value type of the container.
@@ -88,15 +95,6 @@ constexpr std::size_t data_container_byte_size(const C& c) noexcept {
 }
 
 /**
- * Models a type that is a data container that can be constructed from a
- * (possibly-const) pointer to data and a size of that data.
- */
-template <typename C>
-concept const_buffer_constructible =
-    data_container<C> &&
-    neo::constructible_from<C, const_data_pointer_t<C>, std::size_t>;
-
-/**
  * Models a type that is a data container and can be constructed from a pointer
  * to that data and the size of the data.
  */
@@ -104,6 +102,15 @@ template <typename C>
 concept mutable_buffer_constructible =
     data_container<C> &&
     neo::constructible_from<C, data_pointer_t<C>, std::size_t>;
+
+/**
+ * Models a type that is a data container that can be constructed from a
+ * pointer-to-const to data and a size of that data.
+ */
+template <typename C>
+concept const_buffer_constructible =
+    mutable_buffer_constructible<C> &&
+    neo::constructible_from<C, data_pointer_to_const_t<C>, std::size_t>;
 // clang-format on
 
 }  // namespace neo

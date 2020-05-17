@@ -1,8 +1,9 @@
 #pragma once
 
-#include <neo/assert.hpp>
-#include <neo/buffer_concepts.hpp>
+#include <neo/buffer_range.hpp>
 #include <neo/bytewise_iterator.hpp>
+
+#include <neo/assert.hpp>
 
 #include <algorithm>
 #include <cstdint>
@@ -10,7 +11,7 @@
 
 namespace neo {
 
-template <const_buffer_sequence Bufs>
+template <buffer_range Bufs>
 class buffer_bits {
     bytewise_iterator<Bufs> _it;
 
@@ -208,10 +209,10 @@ public:
     constexpr auto inner_iterator() const noexcept { return _it; }
 };
 
-template <const_buffer_sequence Bufs>
-buffer_bits(Bufs) -> buffer_bits<Bufs>;
+template <typename Bufs>
+buffer_bits(const Bufs&) -> buffer_bits<Bufs>;
 
-template <const_buffer_sequence Bufs>
+template <typename Bufs>
 buffer_bits(bytewise_iterator<Bufs>) -> buffer_bits<Bufs>;
 
 }  // namespace neo

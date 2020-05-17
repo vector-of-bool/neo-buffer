@@ -1,4 +1,4 @@
-#include <neo/buffer_sequence_consumer.hpp>
+#include <neo/buffer_range_consumer.hpp>
 
 #include <neo/buffer_algorithm/copy.hpp>
 
@@ -12,7 +12,7 @@ TEST_CASE("Consume some buffers") {
         neo::const_buffer("bark"),
         neo::const_buffer("sing"),
     };
-    neo::buffer_sequence_consumer cbs{bufs};
+    neo::buffer_range_consumer cbs{bufs};
 
     std::string str;
     str.resize(6);
@@ -25,7 +25,7 @@ TEST_CASE("Consume some buffers") {
     CHECK(str == "rksing");
 
     // Consume on buffer boundaries
-    cbs = neo::buffer_sequence_consumer{bufs};
+    cbs = neo::buffer_range_consumer{bufs};
     CHECK(cbs.bytes_remaining() == 12);
     cbs.consume(2);
     CHECK(cbs.bytes_remaining() == 10);
@@ -35,7 +35,7 @@ TEST_CASE("Consume some buffers") {
 }
 
 TEST_CASE("Buffer consumer for singular buffers") {
-    neo::buffer_sequence_consumer bufs{neo::const_buffer("Just one buffer")};
+    neo::buffer_range_consumer bufs{neo::const_buffer("Just one buffer")};
 
     std::string str;
     str.resize(9);
@@ -62,13 +62,13 @@ TEST_CASE("Consume mutable buffers too") {
         neo::mutable_buffer(b),
     };
 
-    neo::buffer_sequence_consumer bufs{bufs_il};
+    neo::buffer_range_consumer bufs{bufs_il};
 
     buffer_copy(bufs.prepare(15), neo::const_buffer("I am a string"));
     CHECK(a == "I am a str");
     CHECK(b == "ing");
 
-    neo::buffer_sequence_consumer c{neo::mutable_buffer(a)};
+    neo::buffer_range_consumer c{neo::mutable_buffer(a)};
     buffer_copy(c.prepare(200), neo::const_buffer("short string"));
     CHECK(a == "short stri");
 }

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <neo/buffer_algorithm/size.hpp>
-#include <neo/buffer_concepts.hpp>
-#include <neo/buffer_sequence_consumer.hpp>
+#include <neo/buffer_range.hpp>
+#include <neo/buffer_range_consumer.hpp>
 #include <neo/dynamic_buffer.hpp>
 
 #include <neo/assert.hpp>
@@ -14,14 +14,14 @@ namespace neo {
 template <typename T>
 concept dynamic_input_buffer =
     requires(T in, std::size_t size) {
-        { in.read(size) } -> const_buffer_sequence;
+        { in.read(size) } -> buffer_range;
         { in.consume(size) };
     };
 
 template <typename T>
 concept dynamic_output_buffer =
     requires(T out, std::size_t size) {
-        { out.prepare(size) } -> mutable_buffer_sequence;
+        { out.prepare(size) } -> mutable_buffer_range;
         { out.commit(size) };
     };
 
@@ -30,20 +30,20 @@ concept dynamic_io_buffer = dynamic_input_buffer<T> && dynamic_output_buffer<T>;
 // clang-format on
 
 struct proto_dynamic_input_buffer {
-    proto_const_buffer_sequence read(std::size_t);
-    void                        consume(std::size_t);
+    proto_buffer_range read(std::size_t);
+    void               consume(std::size_t);
 };
 
 struct proto_dynamic_output_buffer {
-    proto_mutable_buffer_sequence prepare(std::size_t);
-    void                          commit(std::size_t);
+    proto_mutable_buffer_range prepare(std::size_t);
+    void                       commit(std::size_t);
 };
 
 struct proto_dynamic_io_buffer {
-    proto_const_buffer_sequence   read(std::size_t);
-    void                          consume(std::size_t);
-    proto_mutable_buffer_sequence prepare(std::size_t);
-    void                          commit(std::size_t);
+    proto_buffer_range         read(std::size_t);
+    void                       consume(std::size_t);
+    proto_mutable_buffer_range prepare(std::size_t);
+    void                       commit(std::size_t);
 };
 
 NEO_TEST_CONCEPT(dynamic_input_buffer, proto_dynamic_input_buffer);
@@ -110,10 +110,10 @@ dynamic_io_buffer_adaptor(T&&, std::size_t) -> dynamic_io_buffer_adaptor<T>;
 
 NEO_TEST_CONCEPT(dynamic_io_buffer, dynamic_io_buffer_adaptor<proto_dynamic_buffer>);
 
-template <const_buffer_sequence T>
+template <buffer_range T>
 class input_buffer_adaptor {
-    T                                 _in_bufseq;
-    neo::buffer_sequence_consumer<T&> _in{_in_bufseq};
+    T                              _in_bufseq;
+    neo::buffer_range_consumer<T&> _in{_in_bufseq};
 
 public:
     explicit input_buffer_adaptor(T&& in)
@@ -126,12 +126,12 @@ public:
 template <typename T>
 input_buffer_adaptor(T &&) -> input_buffer_adaptor<T>;
 
-NEO_TEST_CONCEPT(dynamic_input_buffer, input_buffer_adaptor<proto_const_buffer_sequence>);
+NEO_TEST_CONCEPT(dynamic_input_buffer, input_buffer_adaptor<proto_buffer_range>);
 
-template <mutable_buffer_sequence T>
+template <mutable_buffer_range T>
 class output_buffer_adaptor {
-    T                                 _out_bufseq;
-    neo::buffer_sequence_consumer<T&> _out{_out_bufseq};
+    T                              _out_bufseq;
+    neo::buffer_range_consumer<T&> _out{_out_bufseq};
 
 public:
     explicit output_buffer_adaptor(T&& out)
@@ -144,6 +144,6 @@ public:
 template <typename T>
 output_buffer_adaptor(T &&) -> output_buffer_adaptor<T>;
 
-NEO_TEST_CONCEPT(dynamic_output_buffer, output_buffer_adaptor<proto_mutable_buffer_sequence>);
+NEO_TEST_CONCEPT(dynamic_output_buffer, output_buffer_adaptor<proto_mutable_buffer_range>);
 
 }  // namespace neo

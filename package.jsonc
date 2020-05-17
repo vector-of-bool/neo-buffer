@@ -5,6 +5,6 @@
     "test_driver": "Catch-Main",
     "depends": {
         "neo-concepts": "^0.3.1",
-        "neo-fun": "^0.2.0"
+        "neo-fun": "^0.2.1"
     }
 }

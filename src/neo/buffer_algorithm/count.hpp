@@ -1,6 +1,6 @@
 #pragma once
 
-#include <neo/buffer_concepts.hpp>
+#include <neo/buffer_range.hpp>
 
 #include <cstddef>
 
@@ -9,10 +9,10 @@ namespace neo {
 /**
  * Return the number of individual buffers in the given buffer sequence
  */
-template <const_buffer_sequence Seq>
+template <buffer_range Seq>
 constexpr std::size_t buffer_count(const Seq& seq) noexcept {
-    auto it   = buffer_sequence_begin(seq);
-    auto stop = buffer_sequence_end(seq);
+    auto it   = std::begin(seq);
+    auto stop = std::end(seq);
     if constexpr (random_access_iterator<decltype(it)>) {
         return stop - it;
     } else {

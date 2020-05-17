@@ -1,8 +1,7 @@
 #pragma once
 
 #include <neo/as_buffer.hpp>
-#include <neo/buffer_concepts.hpp>
-#include <neo/buffer_seq_iter.hpp>
+#include <neo/buffer_range.hpp>
 
 #include <neo/assert.hpp>
 #include <neo/iterator_concepts.hpp>
@@ -12,13 +11,13 @@
 
 namespace neo {
 
-template <const_buffer_sequence Buffers>
+template <buffer_range Buffers>
 class bytewise_iterator {
-    using inner_iter_type     = buffer_sequence_iterator_t<Buffers>;
-    using inner_sentinel_type = buffer_sequence_sentinel_t<Buffers>;
+    using inner_iter_type     = buffer_range_iterator_t<Buffers>;
+    using inner_sentinel_type = buffer_range_sentinel_t<Buffers>;
 
 public:
-    using buffer_type       = iter_value_t<inner_iter_type>;
+    using buffer_type       = buffer_range_value_t<Buffers>;
     using iterator_category = typename std::iterator_traits<inner_iter_type>::iterator_category;
     using iterator_concept  = typename std::iterator_traits<inner_iter_type>::iterator_category;
     using pointer           = typename buffer_type::pointer;
@@ -93,8 +92,8 @@ public:
 
     template <alike<Buffers> Arg>
     constexpr explicit bytewise_iterator(Arg&& bufs)
-        : _cur(buffer_sequence_begin(bufs))
-        , _stop(buffer_sequence_end(bufs)) {
+        : _cur(std::begin(bufs))
+        , _stop(std::end(bufs)) {
         // Find the first non-zero buffer
         while (_cur != _stop && _buf().size() == 0) {
             ++_cur;  // Skip this empty buffer
@@ -228,7 +227,7 @@ public:
 
     template <alike<T> A>
     constexpr explicit bytewise_iterator(A&& b)
-        : _buf(neo::as_buffer(b)) {}
+        : _buf(b) {}
 
     [[nodiscard]] constexpr auto begin() const noexcept { return *this; }
     [[nodiscard]] constexpr auto end() const noexcept {

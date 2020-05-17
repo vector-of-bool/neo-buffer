@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./buffer_concepts.hpp"
+#include <neo/buffer_range.hpp>
 
 #include <cstddef>
 
@@ -11,8 +11,8 @@ namespace neo {
 /**
  * A `static_buffer_vector` represents a dynamically-sized array of buffers with
  * a fixed maximum size. Buffers can be pushed onto the array up to a limit.
- * This models `const_buffer_sequence` and conditionally
- * `mutable_buffer_sequence` (if `BufferType` is mutable_buffer).
+ * This models `buffer_range` and conditionally `mutable_buffer_range` (if `BufferType` is
+ * mutable_buffer).
  */
 template <typename BufferType, std::size_t MaxBuffers>
 struct static_buffer_vector {
@@ -60,7 +60,7 @@ struct static_buffer_vector {
     }
 };
 
-static_assert(const_buffer_sequence<static_buffer_vector<const_buffer, 4>>);
-static_assert(mutable_buffer_sequence<static_buffer_vector<mutable_buffer, 4>>);
+static_assert(buffer_range<static_buffer_vector<const_buffer, 4>>);
+static_assert(mutable_buffer_range<static_buffer_vector<mutable_buffer, 4>>);
 
 }  // namespace neo

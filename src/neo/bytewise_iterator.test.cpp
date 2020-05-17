@@ -8,7 +8,7 @@ template <neo::input_iterator It>
 void check_iter() {}
 
 TEST_CASE("Iterate over some bytes") {
-    check_iter<neo::bytewise_iterator<neo::proto_const_buffer_sequence>>();
+    check_iter<neo::bytewise_iterator<neo::proto_buffer_range>>();
 
     neo::bytewise_iterator byte_iter(neo::const_buffer("hello"));
     auto                   it   = byte_iter.begin();

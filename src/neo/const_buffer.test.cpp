@@ -1,5 +1,4 @@
 #include <neo/const_buffer.hpp>
-#include <neo/buffer_seq_iter.hpp>
 
 #include <catch2/catch.hpp>
 
@@ -124,8 +123,8 @@ TEST_CASE("Single-buffer sequence") {
     std::string       str = "I am a string";
     neo::const_buffer buf{str};
 
-    auto it   = neo::buffer_sequence_begin(buf);
-    auto stop = neo::buffer_sequence_end(buf);
+    auto it   = std::begin(buf);
+    auto stop = std::end(buf);
     CHECK(it != stop);
     CHECK(it->size() == str.size());
     CHECK(std::string_view(*it) == str);

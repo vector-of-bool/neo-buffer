@@ -27,15 +27,6 @@ private:
     pointer   _data = nullptr;
     size_type _size = 0;
 
-private:
-    friend constexpr auto buffer_sequence_begin(ThisType mb) noexcept {
-        return detail::single_buffer_iter(mb);
-    }
-
-    friend constexpr auto buffer_sequence_end(ThisType) noexcept {
-        return detail::single_buffer_iter_sentinel();
-    }
-
 public:
     /**
      * Default-construct an empty buffer
@@ -162,13 +153,12 @@ public:
     constexpr bool equals_string(const String& s) const noexcept {
         return String(static_cast<const ThisType&>(*this)) == s;
     }
-
-    template <const_buffer_constructible T>
-    explicit constexpr operator T() const noexcept {
-        return T(static_cast<const_data_pointer_t<T>>((const void*)data()),
-                 size() / sizeof(typename T::value_type));
-    }
     // clang-format on
+
+    auto begin() const noexcept {
+        return detail::single_buffer_iter(static_cast<const ThisType&>(*this));
+    }
+    auto end() const noexcept { return detail::single_buffer_iter_sentinel(); }
 };
 
 }  // namespace neo::detail

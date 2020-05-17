@@ -2,7 +2,6 @@
 
 #include <neo/as_buffer.hpp>
 #include <neo/buffer_algorithm.hpp>
-#include <neo/buffer_concepts.hpp>
 #include <neo/const_buffer.hpp>
 #include <neo/dynamic_buffer.hpp>
 #include <neo/mutable_buffer.hpp>
@@ -159,7 +158,7 @@ public:
     /**
      * Construct a byte array by copying the contents of the given buffer sequence
      */
-    template <const_buffer_sequence Bufs>
+    template <buffer_range Bufs>
     constexpr static basic_bytes copy(Bufs buf) noexcept {
         basic_bytes ret;
         ret.resize(neo::buffer_size(buf), uninit);

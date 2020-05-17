@@ -1,7 +1,7 @@
 #pragma once
 
-#include <neo/buffer_concepts.hpp>
-#include <neo/buffer_sequence_consumer.hpp>
+#include <neo/buffer_range.hpp>
+#include <neo/buffer_range_consumer.hpp>
 
 #include <neo/concepts.hpp>
 
@@ -95,11 +95,11 @@ buffer_copy(mutable_buffer dest, mutable_buffer src, std::size_t max_copy, Copy 
  * bytes. The operation is bounds-checked, and the number of bytes copied is
  * returned.
  */
-template <mutable_buffer_sequence Dest, const_buffer_sequence Source, ll_buffer_copy_fn Copy>
+template <mutable_buffer_range Dest, buffer_range Source, ll_buffer_copy_fn Copy>
 constexpr std::size_t
 buffer_copy(Dest&& dest, Source&& src, std::size_t max_copy, Copy copy) noexcept {
-    buffer_sequence_consumer in{src};
-    buffer_sequence_consumer out{dest};
+    buffer_range_consumer in{src};
+    buffer_range_consumer out{dest};
     // Keep count of how many bytes remain
     auto        remaining_to_copy = max_copy;
     std::size_t total_copied      = 0;
@@ -122,17 +122,17 @@ buffer_copy(Dest&& dest, Source&& src, std::size_t max_copy, Copy copy) noexcept
  * This overload is guaranteed to exhaust at least one of the source or
  * destination buffers.
  */
-template <mutable_buffer_sequence Dest, const_buffer_sequence Source>
+template <mutable_buffer_range Dest, buffer_range Source>
 constexpr std::size_t buffer_copy(Dest&& dest, Source&& src) noexcept {
     return buffer_copy(dest, src, ll_buffer_copy_safe);
 }
 
-template <mutable_buffer_sequence Dest, const_buffer_sequence Source>
+template <mutable_buffer_range Dest, buffer_range Source>
 constexpr std::size_t buffer_copy(Dest&& dest, Source&& src, std::size_t max_copy) noexcept {
     return buffer_copy(dest, src, max_copy, ll_buffer_copy_safe);
 }
 
-template <mutable_buffer_sequence Dest, const_buffer_sequence Source, ll_buffer_copy_fn Copy>
+template <mutable_buffer_range Dest, buffer_range Source, ll_buffer_copy_fn Copy>
 constexpr auto buffer_copy(Dest&& dest, Source&& src, Copy copy) noexcept {
     return buffer_copy(dest, src, std::numeric_limits<std::size_t>::max(), copy);
 }

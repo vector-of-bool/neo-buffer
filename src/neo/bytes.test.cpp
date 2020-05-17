@@ -9,10 +9,10 @@
 template <neo::dynamic_buffer T>
 void take_dynamic_buffer(T) {}
 
-template <neo::const_buffer_sequence T>
+template <neo::buffer_range T>
 void take_cb(T) {}
 
-template <neo::mutable_buffer_sequence T>
+template <neo::mutable_buffer_range T>
 void take_mb(T) {}
 
 TEST_CASE("Create bytes") {
