@@ -62,8 +62,8 @@ struct proto_mutable_buffer_range {
     proto_mutable_buffer_iterator end() const;
 };
 
-NEO_TEST_CONCEPT(buffer_range, proto_buffer_range);
-NEO_TEST_CONCEPT(mutable_buffer_range, proto_mutable_buffer_range);
+NEO_TEST_CONCEPT(buffer_range<proto_buffer_range>);
+NEO_TEST_CONCEPT(mutable_buffer_range<proto_mutable_buffer_range>);
 
 static_assert(same_as<buffer_range_value_t<proto_buffer_range>, const_buffer>);
 static_assert(same_as<buffer_range_value_t<proto_mutable_buffer_range>, mutable_buffer>);

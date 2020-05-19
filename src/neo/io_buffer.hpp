@@ -46,8 +46,8 @@ struct proto_dynamic_io_buffer {
     void                       commit(std::size_t);
 };
 
-NEO_TEST_CONCEPT(dynamic_input_buffer, proto_dynamic_input_buffer);
-NEO_TEST_CONCEPT(dynamic_output_buffer, proto_dynamic_output_buffer);
+NEO_TEST_CONCEPT(dynamic_input_buffer<proto_dynamic_input_buffer>);
+NEO_TEST_CONCEPT(dynamic_output_buffer<proto_dynamic_output_buffer>);
 
 template <dynamic_buffer DynBuf>
 class dynamic_io_buffer_adaptor {
@@ -108,7 +108,7 @@ dynamic_io_buffer_adaptor(T &&) -> dynamic_io_buffer_adaptor<T>;
 template <typename T>
 dynamic_io_buffer_adaptor(T&&, std::size_t) -> dynamic_io_buffer_adaptor<T>;
 
-NEO_TEST_CONCEPT(dynamic_io_buffer, dynamic_io_buffer_adaptor<proto_dynamic_buffer>);
+NEO_TEST_CONCEPT(dynamic_io_buffer<dynamic_io_buffer_adaptor<proto_dynamic_buffer>>);
 
 template <buffer_range T>
 class input_buffer_adaptor {
@@ -126,7 +126,7 @@ public:
 template <typename T>
 input_buffer_adaptor(T &&) -> input_buffer_adaptor<T>;
 
-NEO_TEST_CONCEPT(dynamic_input_buffer, input_buffer_adaptor<proto_buffer_range>);
+NEO_TEST_CONCEPT(dynamic_input_buffer<input_buffer_adaptor<proto_buffer_range>>);
 
 template <mutable_buffer_range T>
 class output_buffer_adaptor {
@@ -144,6 +144,6 @@ public:
 template <typename T>
 output_buffer_adaptor(T &&) -> output_buffer_adaptor<T>;
 
-NEO_TEST_CONCEPT(dynamic_output_buffer, output_buffer_adaptor<proto_mutable_buffer_range>);
+NEO_TEST_CONCEPT(dynamic_output_buffer<output_buffer_adaptor<proto_mutable_buffer_range>>);
 
 }  // namespace neo

@@ -44,7 +44,7 @@ concept dynamic_buffer = requires(DynBuf buf,
     buf.consume(size);
 };
 
-NEO_TEST_CONCEPT(dynamic_buffer, proto_dynamic_buffer);
+NEO_TEST_CONCEPT(dynamic_buffer<proto_dynamic_buffer>);
 
 // clang-format on
 
