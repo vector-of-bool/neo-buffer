@@ -1,6 +1,7 @@
 #pragma once
 
 #include <neo/concepts.hpp>
+#include <neo/test_concept.hpp>
 
 #include <cstddef>
 #include <type_traits>
@@ -16,11 +17,17 @@ struct proto_buffer_safe {
  * thereof that is: It is well-defined to make a copy of the object by copying
  * the representation of that object into another location.
  */
+// clang-format off
 template <typename T>
-concept buffer_safe = trivially_copyable<T> ||  //
-    (std::is_array_v<T>&& buffer_safe<std::remove_all_extents_t<T>>);
+concept buffer_safe =
+    trivially_copyable<T> ||
+    (std::is_array_v<T> && trivially_copyable<std::remove_all_extents_t<T>>);
 
-static_assert(buffer_safe<proto_buffer_safe>);
+template <typename T>
+concept buffer_safe_cvr = buffer_safe<std::remove_const_t<std::remove_reference_t<T>>>;
+// clang-format on
+
+NEO_TEST_CONCEPT(buffer_safe<proto_buffer_safe>);
 
 /**
  * Convert the given pointer to a pointer to `std::byte` referring to the

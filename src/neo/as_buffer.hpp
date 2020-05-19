@@ -114,4 +114,12 @@ concept as_buffer_convertible = requires(T&& val) {
 template <as_buffer_convertible T>
 using as_buffer_t = decltype(as_buffer(ref_v<T>));
 
+/**
+ * Create a buffer that views the representation of a buffer_safe object.
+ */
+template <buffer_safe_cvr T>
+constexpr auto trivial_buffer(T&& what) noexcept {
+    return as_buffer(byte_pointer(std::addressof(what)), sizeof what);
+}
+
 }  // namespace neo

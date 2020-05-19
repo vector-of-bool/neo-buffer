@@ -149,8 +149,17 @@ TEST_CASE("const_buffer from std::vector") {
 
 TEST_CASE("Member as_buffer") {
     mine_with_as_buffer_member m;
-    m.a = 32;
-    m.b = 44;
+    m.a     = 32;
+    m.b     = 44;
     auto mb = neo::as_buffer(m);
     CHECK(mb.size() == sizeof m);
+}
+
+TEST_CASE("View buffers of objects") {
+    const int a     = 12;
+    int       b     = 7;
+    auto      a_buf = neo::trivial_buffer(a);
+    auto      b_buf = neo::trivial_buffer(b);
+    neo::buffer_copy(b_buf, a_buf);
+    CHECK(b == 12);
 }
