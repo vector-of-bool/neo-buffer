@@ -1,5 +1,7 @@
 #include <neo/const_buffer.hpp>
 
+#include <neo/test_concept.hpp>
+
 #include <catch2/catch.hpp>
 
 #include <iostream>
@@ -131,3 +133,6 @@ TEST_CASE("Single-buffer sequence") {
     ++it;
     CHECK(it == stop);
 }
+
+NEO_TEST_CONCEPT(neo::sentinel_for<neo::detail::single_buffer_iter_sentinel,
+                                   neo::detail::single_buffer_iter<neo::const_buffer>>);

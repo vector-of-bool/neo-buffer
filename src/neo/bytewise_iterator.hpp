@@ -5,6 +5,7 @@
 
 #include <neo/assert.hpp>
 #include <neo/iterator_concepts.hpp>
+#include <neo/iterator_facade.hpp>
 
 #include <iterator>
 #include <type_traits>
@@ -12,19 +13,9 @@
 namespace neo {
 
 template <buffer_range Buffers>
-class bytewise_iterator {
+class bytewise_iterator : public iterator_facade<bytewise_iterator<Buffers>> {
     using inner_iter_type     = buffer_range_iterator_t<Buffers>;
     using inner_sentinel_type = buffer_range_sentinel_t<Buffers>;
-
-public:
-    using buffer_type       = buffer_range_value_t<Buffers>;
-    using iterator_category = typename std::iterator_traits<inner_iter_type>::iterator_category;
-    using iterator_concept  = typename std::iterator_traits<inner_iter_type>::iterator_category;
-    using pointer           = typename buffer_type::pointer;
-    using difference_type   = std::ptrdiff_t;
-    using value_type = std::remove_cv_t<std::remove_pointer_t<typename buffer_type::pointer>>;
-    using reference
-        = std::add_lvalue_reference_t<std::remove_pointer_t<typename buffer_type::pointer>>;
 
 private:
     // The unerlying buffer iterator
@@ -41,7 +32,7 @@ private:
         // Check for iterating past-the end
         neo_assert(expects,
                    _cur != _stop,
-                   "Attempted to read beyond-the-end of a buffer through a bytewise_iterator",
+                   "Attempted to advance the past-the-end of a buffer through a bytewise_iterator",
                    off);
         // Calc the number of bytes remaining in the current buffer
         auto remaining_in_buf = _buf().size() - _cur_buf_pos;
@@ -110,117 +101,31 @@ public:
         return cp;
     }
 
-    constexpr auto& operator++() noexcept {
-        _advance(1);
-        return *this;
-    }
-    constexpr auto operator++(int) noexcept {
-        auto cp = *this;
-        ++*this;
-        return cp;
+    constexpr std::ptrdiff_t distance_to(const bytewise_iterator& other) const noexcept {
+        return other._abs_pos - _abs_pos;
     }
 
-    constexpr auto& operator--() noexcept requires bidirectional_iterator<inner_iter_type> {
+    constexpr void increment() noexcept { _advance(1); }
+    constexpr void decrement() noexcept requires bidirectional_iterator<inner_iter_type> {
         _rewind(1);
-        return *this;
-    }
-    constexpr auto operator--(int) noexcept requires bidirectional_iterator<inner_iter_type> {
-        auto cp = *this;
-        --*this;
-        return cp;
     }
 
-    [[nodiscard]] constexpr auto& operator*() const noexcept { return (*_cur)[_cur_buf_pos]; }
-    [[nodiscard]] constexpr auto& operator[](difference_type pos) const noexcept
-        requires bidirectional_iterator<inner_iter_type> {
-        auto tmp = *this + pos;
-        return *tmp;
-    }
-
-    [[nodiscard]] constexpr bool operator==(const bytewise_iterator& right) const noexcept {
-        return _abs_pos == right._abs_pos;
-    }
-    [[nodiscard]] constexpr bool operator!=(const bytewise_iterator& right) const noexcept {
-        return !(*this == right);
-    }
-    [[nodiscard]] constexpr bool operator<(const bytewise_iterator& other) const noexcept {
-        return _abs_pos < other._abs_pos;
-    }
-    [[nodiscard]] constexpr bool operator>(const bytewise_iterator& other) const noexcept {
-        return _abs_pos > other._abs_pos;
-    }
-    [[nodiscard]] constexpr bool operator>=(const bytewise_iterator& other) const noexcept {
-        return !(_abs_pos < other._abs_pos);
-    }
-    [[nodiscard]] constexpr bool operator<=(const bytewise_iterator& other) const noexcept {
-        return !(_abs_pos > other._abs_pos);
-    }
-
-    [[nodiscard]] difference_type operator-(const bytewise_iterator& other) const noexcept {
-        return _abs_pos - other._abs_pos;
-    }
-
-    constexpr bytewise_iterator& operator+=(difference_type off) noexcept
-        requires bidirectional_iterator<inner_iter_type> {
+    constexpr void advance(std::ptrdiff_t off) requires bidirectional_iterator<inner_iter_type> {
         if (off < 0) {
             _rewind(static_cast<std::size_t>(-off));
         } else if (off > 0) {
             _advance(static_cast<std::size_t>(off));
         }
-        return *this;
     }
 
-    constexpr bytewise_iterator& operator-=(difference_type off) noexcept
-        requires bidirectional_iterator<inner_iter_type> {
-        return *this += -off;
-    }
-
-    [[nodiscard]] constexpr friend bytewise_iterator operator+(bytewise_iterator it,
-                                                               difference_type   off) noexcept
-        requires bidirectional_iterator<inner_iter_type> {
-        return it += off;
-    }
-    [[nodiscard]] constexpr friend bytewise_iterator operator+(difference_type   off,
-                                                               bytewise_iterator it) noexcept
-        requires bidirectional_iterator<inner_iter_type> {
-        return it += off;
-    }
-    [[nodiscard]] constexpr friend bytewise_iterator operator-(bytewise_iterator it,
-                                                               difference_type   off) noexcept
-        requires bidirectional_iterator<inner_iter_type> {
-        return it -= off;
-    }
+    constexpr auto& dereference() const noexcept { return (*_cur)[_cur_buf_pos]; }
 };
 
-// clang-format off
 template <single_buffer T>
-class bytewise_iterator<T> {
-    // clang-format on
-public:
-    using buffer_type       = as_buffer_t<T>;
-    using iterator_category = std::random_access_iterator_tag;
-    using iterator_concept  = std::random_access_iterator_tag;
-    using difference_type   = std::ptrdiff_t;
-    using pointer           = typename buffer_type::pointer;
-    using value_type        = std::byte;
-    using reference
-        = std::add_lvalue_reference_t<std::remove_pointer_t<typename buffer_type::pointer>>;
-
+class bytewise_iterator<T> : public iterator_facade<bytewise_iterator<T>> {
 private:
-    buffer_type _buf;
+    T           _buf;
     std::size_t _idx = 0;
-
-    constexpr void _adv(difference_type diff) {
-        if (diff < 0 && static_cast<std::size_t>(-diff) > _idx) {
-            neo_assert(expects,
-                       false,
-                       "Bytewise iterator rewind before the beginning of the buffer.",
-                       diff);
-        } else if (static_cast<difference_type>(_buf.size() - _idx) < diff) {
-            neo_assert(expects, false, "Advancing bytewise iteator beyond end of the buffer", diff);
-        }
-        _idx += diff;
-    }
 
 public:
     constexpr bytewise_iterator() = default;
@@ -236,76 +141,26 @@ public:
         return cp;
     }
 
-    constexpr auto& operator++() noexcept {
-        _adv(1);
-        return *this;
-    }
-    constexpr auto operator++(int) noexcept {
-        auto cp = *this;
-        ++*this;
-        return cp;
-    }
-
-    constexpr auto& operator--() noexcept {
-        _adv(-1);
-        return *this;
-    }
-    constexpr auto operator--(int) noexcept {
-        auto cp = *this;
-        --*this;
-        return cp;
+    constexpr void advance(std::ptrdiff_t diff) noexcept {
+        if (diff < 0 && static_cast<std::size_t>(-diff) > _idx) {
+            neo_assert(expects,
+                       false,
+                       "Bytewise iterator rewind before the beginning of the buffer.",
+                       diff);
+        } else if (static_cast<std::ptrdiff_t>(_buf.size() - _idx) < diff) {
+            neo_assert(expects, false, "Advancing bytewise iteator beyond end of the buffer", diff);
+        }
+        _idx += diff;
     }
 
-    [[nodiscard]] constexpr auto& operator*() const noexcept { return _buf[_idx]; }
-    [[nodiscard]] constexpr auto& operator[](difference_type pos) const noexcept {
-        return _buf[_idx + pos];
-    }
+    constexpr auto& operator*() const noexcept { return _buf[_idx]; }
 
-    [[nodiscard]] constexpr bool operator==(bytewise_iterator other) const noexcept {
-        return _idx == other._idx;
-    }
-    [[nodiscard]] constexpr bool operator!=(bytewise_iterator other) const noexcept {
-        return !(*this == other);
-    }
-    [[nodiscard]] constexpr bool operator<(bytewise_iterator other) const noexcept {
-        return _idx < other._idx;
-    }
-    [[nodiscard]] constexpr bool operator>(bytewise_iterator other) const noexcept {
-        return _idx > other._idx;
-    }
-    [[nodiscard]] constexpr bool operator>=(bytewise_iterator other) const noexcept {
-        return !(_idx < other._idx);
-    }
-    [[nodiscard]] constexpr bool operator<=(bytewise_iterator other) const noexcept {
-        return !(_idx > other._idx);
-    }
-
-    [[nodiscard]] difference_type operator-(bytewise_iterator other) const noexcept {
-        return _idx - other._idx;
-    }
-
-    constexpr bytewise_iterator& operator+=(difference_type off) noexcept {
-        _adv(off);
-        return *this;
-    }
-
-    constexpr bytewise_iterator& operator-=(difference_type off) noexcept { return *this += -off; }
-
-    [[nodiscard]] constexpr friend bytewise_iterator operator+(bytewise_iterator it,
-                                                               difference_type   off) noexcept {
-        return it += off;
-    }
-    [[nodiscard]] constexpr friend bytewise_iterator operator+(difference_type   off,
-                                                               bytewise_iterator it) noexcept {
-        return it += off;
-    }
-    [[nodiscard]] constexpr friend bytewise_iterator operator-(bytewise_iterator it,
-                                                               difference_type   off) noexcept {
-        return it -= off;
+    constexpr std::ptrdiff_t distance_to(bytewise_iterator other) const noexcept {
+        return other._idx - _idx;
     }
 };
 
 template <typename T>
-bytewise_iterator(T &&) -> bytewise_iterator<std::remove_reference_t<T>>;
+bytewise_iterator(const T&) -> bytewise_iterator<T>;
 
 }  // namespace neo
