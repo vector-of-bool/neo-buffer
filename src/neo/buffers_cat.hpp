@@ -34,6 +34,8 @@ public:
     constexpr buffers_cat() = default;
 
     /// Construct the concatenation of buffers from the given buffers.
+    /// XXX: A bug on MSVC causes the default constructor to collide with the N-ary constructor for
+    /// N=0, as the attached `requires` clause is not evaluated at the right time.
     explicit constexpr buffers_cat(Bufs&&... bufs) requires(sizeof...(Bufs) != 0)
         : _bufs(NEO_FWD(bufs)...) {}
 

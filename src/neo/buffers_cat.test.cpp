@@ -5,6 +5,7 @@
 #include <neo/buffer_algorithm/count.hpp>
 #include <neo/buffer_algorithm/size.hpp>
 #include <neo/buffer_algorithm/transform.hpp>
+#include <neo/platform.hpp>
 
 #include <neo/test_concept.hpp>
 
@@ -38,9 +39,13 @@ TEST_CASE("Concatenate some buffers") {
     neo::buffer_transform(neo::buffer_copy_transformer(), neo::as_dynamic_buffer(greeting), cat2);
     CHECK(greeting == "Hello, brave new world");
 
+#if !NEO_COMPILER_IS_MSVC
+    /// XXX: A bug on MSVC causes the default constructor to collide with the N-ary constructor for
+    /// N=0, as the attached `requires` clause is not evaluated at the right time.
     // Empty buffers_cat is okay
     neo::buffers_cat<> empty_cat;
     static_cast<void>(empty_cat);
+#endif
 
     // Copy-constructor will not deduce to a nested concatenation
     neo::buffers_cat cat3(cat2);
