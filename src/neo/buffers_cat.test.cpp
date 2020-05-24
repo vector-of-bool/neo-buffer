@@ -13,62 +13,117 @@
 
 using namespace std::literals;
 
-TEST_CASE("Concatenate some buffers") {
-    std::string         world = "world";
-    neo::const_buffer   cb{"Hello, "};
-    neo::mutable_buffer mb{world};
+using neo::const_buffer;
+using neo::mutable_buffer;
 
-    neo::buffers_cat cat1{cb, mb};
+namespace {
 
-    auto it = cat1.begin();
-    CHECK(it->equals_string("Hello, "sv));
-    ++it;
-    CHECK(it->equals_string("world"sv));
-
-    CHECK(neo::buffer_size(cat1) == 12);
-
-    auto inner = {neo::const_buffer("brave "), neo::const_buffer{"new "}};
-
-    std::string greeting;
-    greeting.resize(12);
-    neo::buffer_copy(neo::as_buffer(greeting), cat1);
-    CHECK(greeting == "Hello, world");
-
-    neo::buffers_cat cat2{cb, inner, mb};
-    greeting.clear();
-    neo::buffer_transform(neo::buffer_copy_transformer(), neo::as_dynamic_buffer(greeting), cat2);
-    CHECK(greeting == "Hello, brave new world");
-
-#if !NEO_COMPILER_IS_MSVC
-    /// XXX: A bug on MSVC causes the default constructor to collide with the N-ary constructor for
-    /// N=0, as the attached `requires` clause is not evaluated at the right time.
-    // Empty buffers_cat is okay
-    neo::buffers_cat<> empty_cat;
-    static_cast<void>(empty_cat);
-#endif
-
-    // Copy-constructor will not deduce to a nested concatenation
-    neo::buffers_cat cat3(cat2);
-    static_assert(neo::same_as<decltype(cat3), decltype(cat2)>);
-
-    // We can assign-over buffers_cat
-    cat2 = cat3;
-
-    // We can have a buffers_cat of one element
-
-    neo::buffers_cat single_cat(neo::as_buffer(greeting));
-    // Copy it:
-    auto             s2 = single_cat;
-    neo::buffers_cat single_cat2(s2);
-    static_assert(neo::same_as<decltype(single_cat2), decltype(single_cat)>);
-
-    std::string greeting2;
-    neo::buffer_transform(neo::buffer_copy_transformer(),
-                          neo::as_dynamic_buffer(greeting2),
-                          single_cat2);
-    CHECK(greeting2 == "Hello, brave new world");
+template <neo::buffer_range R>
+void check_buffer_str(R&& r, std::string_view expect) {
+    std::string result;
+    neo::buffer_transform(neo::buffer_copy_transformer(), neo::as_dynamic_buffer(result), r);
+    CHECK(result == expect);
 }
 
-NEO_TEST_CONCEPT(neo::buffer_range<neo::buffers_cat<neo::const_buffer, neo::const_buffer>>);
+#define CHECK_BUFFER_STR(Buf, String)                                                              \
+    do {                                                                                           \
+        std::string result;                                                                        \
+        neo::buffer_transform(neo::buffer_copy_transformer(),                                      \
+                              neo::as_dynamic_buffer(result),                                      \
+                              Buf);                                                                \
+        CHECK(result == String);                                                                   \
+    } while (0)
+
+}  // namespace
+
+TEST_CASE("Concat buffer arrays") {
+    // Concat just two buffers:
+    std::array<neo::const_buffer, 2> pair
+        = neo::buffers_cat(neo::const_buffer("foo"), neo::const_buffer("bar"));
+    CHECK_BUFFER_STR(pair, "foobar");
+
+    // Three buffers
+    auto                             str  = "baz"s;
+    std::array<neo::const_buffer, 3> trio = neo::buffers_cat(neo::const_buffer("foo"),
+                                                             neo::const_buffer("bar"),
+                                                             neo::mutable_buffer(str));
+    CHECK_BUFFER_STR(trio, "foobarbaz");
+
+    // All mutable buffers?
+    std::array<neo::mutable_buffer, 2> pair2
+        = neo::buffers_cat(neo::mutable_buffer(str), neo::mutable_buffer(str));
+    CHECK_BUFFER_STR(pair2, "bazbaz");
+
+    // Append two arrays
+    std::array<neo::const_buffer, 4> quad = neo::buffers_cat(pair, pair2);
+    CHECK_BUFFER_STR(quad, "foobarbazbaz");
+
+    // Append a single buffer to an array
+    auto five_bufs = neo::buffers_cat(quad, neo::const_buffer("quux"));
+    CHECK_BUFFER_STR(five_bufs, "foobarbazbazquux");
+
+    auto five_bufs2 = neo::buffers_cat(neo::const_buffer("quux"), quad);
+    CHECK_BUFFER_STR(five_bufs2, "quuxfoobarbazbaz");
+
+    // Append multiple simple buffer sequences
+    std::array<neo::const_buffer, 7> seven_bufs
+        = neo::buffers_cat(pair, pair, neo::const_buffer("boo"), pair);
+    CHECK_BUFFER_STR(seven_bufs, "foobarfoobarboofoobar");
+
+    using complex_buffer = neo::static_buffer_vector<mutable_buffer, 42>;
+    complex_buffer bvec;
+
+    neo::buffers_seq_concat<std::array<const_buffer, 4>,
+                            neo::static_buffer_vector<mutable_buffer, 42>&,
+                            std::array<const_buffer, 2>&>
+        test = neo::buffers_cat(pair, pair, bvec, pair);
+
+    neo::buffers_seq_concat<std::array<const_buffer, 4>,
+                            neo::static_buffer_vector<mutable_buffer, 42>&>
+        test2 = neo::buffers_cat(pair, pair, bvec);
+
+    auto cat1 = neo::buffers_cat(bvec, bvec);
+    auto cat2 = neo::buffers_cat(bvec, bvec);
+    neo::buffers_seq_concat<complex_buffer&, complex_buffer&, complex_buffer&, complex_buffer&>
+        cat1_cat2 = neo::buffers_cat(cat1, cat2);
+}
+
+// Check the result types for each buffer concatenation operation
+NEO_TEST_CONCEPT(neo::same_as<neo::buffers_cat_t<>, std::array<mutable_buffer, 0>>);
+NEO_TEST_CONCEPT(neo::same_as<neo::buffers_cat_t<const_buffer>, const_buffer>);
 NEO_TEST_CONCEPT(
-    neo::forward_iterator<neo::buffers_cat<neo::const_buffer&, neo::const_buffer&>::iterator>);
+    neo::same_as<neo::buffers_cat_t<const_buffer, mutable_buffer>, std::array<const_buffer, 2>>);
+NEO_TEST_CONCEPT(neo::same_as<neo::buffers_cat_t<mutable_buffer, mutable_buffer>,
+                              std::array<mutable_buffer, 2>>);
+NEO_TEST_CONCEPT(neo::same_as<neo::buffers_cat_t<std::array<const_buffer, 2>, const_buffer>,
+                              std::array<const_buffer, 3>>);
+NEO_TEST_CONCEPT(neo::same_as<neo::buffers_cat_t<>, std::array<mutable_buffer, 0>>);
+NEO_TEST_CONCEPT(
+    neo::same_as<neo::buffers_cat_t<std::array<mutable_buffer, 5>, std::array<mutable_buffer, 6>>,
+                 std::array<mutable_buffer, 11>>);
+NEO_TEST_CONCEPT(neo::same_as<neo::buffers_cat_t<std::array<const_buffer, 5>,
+                                                 std::array<mutable_buffer, 3>,
+                                                 std::array<const_buffer, 3>>,
+                              std::array<const_buffer, 11>>);
+NEO_TEST_CONCEPT(neo::same_as<neo::buffers_cat_t<std::array<const_buffer, 5>,
+                                                 std::array<mutable_buffer, 3>,
+                                                 const_buffer,
+                                                 std::array<const_buffer, 3>>,
+                              std::array<const_buffer, 12>>);
+NEO_TEST_CONCEPT(neo::same_as<neo::buffers_cat_t<std::array<const_buffer, 5>,
+                                                 std::array<mutable_buffer, 3>,
+                                                 neo::proto_buffer_range,
+                                                 std::array<const_buffer, 3>>,
+                              neo::buffers_seq_concat<std::array<const_buffer, 8>,
+                                                      neo::proto_buffer_range,
+                                                      std::array<const_buffer, 3>>>);
+NEO_TEST_CONCEPT(
+    neo::same_as<
+        neo::buffers_cat_t<neo::buffers_seq_concat<neo::static_buffer_vector<const_buffer, 4>,
+                                                   neo::static_buffer_vector<const_buffer, 6>>,
+                           neo::buffers_seq_concat<neo::static_buffer_vector<const_buffer, 9>,
+                                                   neo::static_buffer_vector<const_buffer, 1>>>,
+        neo::buffers_seq_concat<neo::static_buffer_vector<const_buffer, 4>,
+                                neo::static_buffer_vector<const_buffer, 6>,
+                                neo::static_buffer_vector<const_buffer, 9>,
+                                neo::static_buffer_vector<const_buffer, 1>>>);
