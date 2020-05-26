@@ -130,7 +130,8 @@ constexpr auto buffer_transform(Tr&& tr, Out&& out, In&& in_, Args&&... args) {
     // The actual final result type:
     using result_type = buffer_transform_result_t<Tr, Args...>;
     // The growth size can vary based on the algorithm
-    constexpr std::size_t growth_size = buffer_transform_dynamic_growth_hint_v<std::decay_t<Tr>>;
+    constexpr std::size_t growth_size
+        = buffer_transform_dynamic_growth_hint_v<std::remove_cvref_t<Tr>>;
     static_assert(growth_size > 0);
 
     // The input consumer

@@ -24,7 +24,7 @@ concept buffer_safe =
     (std::is_array_v<T> && trivially_copyable<std::remove_all_extents_t<T>>);
 
 template <typename T>
-concept buffer_safe_cvr = buffer_safe<std::remove_const_t<std::remove_reference_t<T>>>;
+concept buffer_safe_cvr = buffer_safe<std::remove_cvref_t<T>>;
 // clang-format on
 
 NEO_TEST_CONCEPT(buffer_safe<proto_buffer_safe>);
