@@ -1,6 +1,9 @@
 #include <neo/as_buffer.hpp>
 #include <neo/buffer_algorithm/copy.hpp>
 
+#include <neo/as_dynamic_buffer.hpp>
+#include <neo/io_buffer.hpp>
+
 #include <catch2/catch.hpp>
 
 using neo::as_buffer;
@@ -48,4 +51,15 @@ TEST_CASE("Copy with overlap") {
     s1 = "first, second, third";
     buffer_copy(as_buffer(s1), as_buffer(s1) + 7);
     CHECK(s1 == "second, third, third");
+}
+
+TEST_CASE("Copy dynamic sources and sinks") {
+    neo::buffer_range_consumer in{neo::const_buffer("I am a string")};
+
+    std::string str;
+
+    auto n_copied
+        = neo::buffer_copy(neo::dynamic_io_buffer_adaptor(neo::as_dynamic_buffer(str)), in);
+    CHECK(n_copied == str.size());
+    CHECK(str == "I am a string");
 }

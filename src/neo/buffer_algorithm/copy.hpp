@@ -2,6 +2,8 @@
 
 #include <neo/buffer_range.hpp>
 #include <neo/buffer_range_consumer.hpp>
+#include <neo/buffer_sink.hpp>
+#include <neo/buffer_source.hpp>
 
 #include <neo/concepts.hpp>
 
@@ -62,8 +64,7 @@ constexpr void ll_buffer_copy_safe(std::byte* dest, const std::byte* src, std::s
 // clang-format off
 template <typename T>
 concept ll_buffer_copy_fn =
-    neo::invocable<T, std::byte*, const std::byte*, std::size_t>
-    && trivially_copyable<T>;
+    neo::invocable<T, std::byte*, const std::byte*, std::size_t>;
 // clang-format on
 
 /**
@@ -74,7 +75,7 @@ concept ll_buffer_copy_fn =
  */
 template <ll_buffer_copy_fn Copy>
 constexpr std::size_t
-buffer_copy(mutable_buffer dest, const_buffer src, std::size_t max_copy, Copy copy) noexcept {
+buffer_copy(mutable_buffer dest, const_buffer src, std::size_t max_copy, Copy&& copy) noexcept {
     // Calculate how much we should copy in this operation. It will be the minimum of the buffer
     // sizes and the maximum bytes we want to copy
     const auto n_to_copy = (std::min)(src.size(), (std::min)(dest.size(), max_copy));
@@ -86,7 +87,7 @@ buffer_copy(mutable_buffer dest, const_buffer src, std::size_t max_copy, Copy co
 // Catch copying from mutable->mutable and call the overload of const->mutable
 template <ll_buffer_copy_fn Copy>
 constexpr std::size_t
-buffer_copy(mutable_buffer dest, mutable_buffer src, std::size_t max_copy, Copy copy) noexcept {
+buffer_copy(mutable_buffer dest, mutable_buffer src, std::size_t max_copy, Copy&& copy) noexcept {
     return buffer_copy(dest, const_buffer(src), max_copy, copy);
 }
 
@@ -97,7 +98,7 @@ buffer_copy(mutable_buffer dest, mutable_buffer src, std::size_t max_copy, Copy 
  */
 template <mutable_buffer_range Dest, buffer_range Source, ll_buffer_copy_fn Copy>
 constexpr std::size_t
-buffer_copy(Dest&& dest, Source&& src, std::size_t max_copy, Copy copy) noexcept {
+buffer_copy(Dest&& dest, Source&& src, std::size_t max_copy, Copy&& copy) noexcept {
     buffer_range_consumer in{src};
     buffer_range_consumer out{dest};
     // Keep count of how many bytes remain
@@ -133,8 +134,63 @@ constexpr std::size_t buffer_copy(Dest&& dest, Source&& src, std::size_t max_cop
 }
 
 template <mutable_buffer_range Dest, buffer_range Source, ll_buffer_copy_fn Copy>
-constexpr auto buffer_copy(Dest&& dest, Source&& src, Copy copy) noexcept {
+constexpr auto buffer_copy(Dest&& dest, Source&& src, Copy&& copy) noexcept {
     return buffer_copy(dest, src, std::numeric_limits<std::size_t>::max(), copy);
+}
+
+/**
+ * Copy from a dynamic buffer source to a dynamic buffer sink. Data will be
+ * pulled from the source and copied into the sink until we either reach
+ * `max_size` bytes copied, the source fails to provide more data, or the sink
+ * fails to provide more destination area.
+ */
+template <buffer_sink Dest, buffer_source Source, ll_buffer_copy_fn Copy>
+constexpr std::size_t
+buffer_copy(Dest&& dest, Source&& source, std::size_t max_size, Copy&& copy) noexcept {
+    std::size_t total_copied      = 0;
+    std::size_t remaining_to_copy = max_size;
+    while (remaining_to_copy != 0) {
+        auto   n_to_read = (std::min)(remaining_to_copy, std::size_t(1024 * 16));
+        auto&& in        = source.data(n_to_read);
+        auto   in_size   = neo::buffer_size(in);
+        if (in_size == 0) {
+            break;
+        }
+        auto&& out = dest.prepare(in_size);
+        if (neo::buffer_size(out) == 0) {
+            break;
+        }
+        auto n_copied = buffer_copy(out, in, remaining_to_copy, copy);
+        neo_assert(invariant,
+                   n_copied > 0,
+                   "Not enough bytes were copied while transferring from source to sink",
+                   n_copied,
+                   max_size,
+                   remaining_to_copy,
+                   total_copied,
+                   neo::buffer_size(in),
+                   neo::buffer_size(out));
+        source.consume(n_copied);
+        dest.commit(n_copied);
+        remaining_to_copy -= n_copied;
+        total_copied += n_copied;
+    }
+    return total_copied;
+}
+
+template <buffer_sink Dest, buffer_source Source>
+constexpr std::size_t buffer_copy(Dest&& dest, Source&& source, std::size_t max_copy) noexcept {
+    return buffer_copy(dest, source, max_copy, ll_buffer_copy_safe);
+}
+
+template <buffer_sink Dest, buffer_source Source, ll_buffer_copy_fn Copy>
+constexpr std::size_t buffer_copy(Dest&& dest, Source&& source, Copy&& copy) noexcept {
+    return buffer_copy(dest, source, std::numeric_limits<std::size_t>::max(), copy);
+}
+
+template <buffer_sink Dest, buffer_source Source>
+constexpr std::size_t buffer_copy(Dest&& dest, Source&& source) noexcept {
+    return buffer_copy(dest, source, ll_buffer_copy_safe);
 }
 
 struct buffer_copy_transform_result {

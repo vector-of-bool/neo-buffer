@@ -65,6 +65,10 @@ public:
         return bufs;
     }
 
+    [[nodiscard]] constexpr auto data(std::size_t n_to_prepare) const noexcept {
+        return prepare(n_to_prepare);
+    }
+
     [[nodiscard]] constexpr buffer_type next_contiguous() const noexcept {
         if (_seq_it == _seq_stop) {
             return buffer_type();
@@ -94,6 +98,8 @@ public:
             }
         }
     }
+
+    constexpr void commit(std::size_t size) noexcept { consume(size); }
 };
 
 template <single_buffer T>
@@ -111,7 +117,10 @@ public:
     [[nodiscard]] constexpr auto prepare(std::size_t n) const noexcept {
         return as_buffer(_buf, n);
     }
+    [[nodiscard]] constexpr auto data(std::size_t n) const noexcept { return as_buffer(_buf, n); }
+
     constexpr void consume(std::size_t n) noexcept { _buf += n; }
+    constexpr void commit(std::size_t n) noexcept { consume(n); }
 
     [[nodiscard]] constexpr buffer_type next_contiguous() const noexcept { return _buf; }
 

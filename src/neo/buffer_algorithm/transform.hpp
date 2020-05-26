@@ -125,10 +125,7 @@ constexpr auto buffer_transform(Tr&& tr, Out&& out_, In&& in_, Args&&... args) {
 /**
  * Apply a buffer transformation on the given input `in_`, writing output into the output buffer
  */
-template <typename... Args,
-          dynamic_output_buffer       Out,
-          buffer_range                In,
-          buffer_transformer<Args...> Tr>
+template <typename... Args, buffer_sink Out, buffer_range In, buffer_transformer<Args...> Tr>
 constexpr auto buffer_transform(Tr&& tr, Out&& out, In&& in_, Args&&... args) {
     // The actual final result type:
     using result_type = buffer_transform_result_t<Tr, Args...>;
