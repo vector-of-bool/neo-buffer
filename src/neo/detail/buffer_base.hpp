@@ -155,10 +155,10 @@ public:
     }
     // clang-format on
 
-    auto begin() const noexcept {
+    constexpr auto begin() const noexcept {
         return detail::single_buffer_iter(static_cast<const ThisType&>(*this));
     }
-    auto end() const noexcept { return detail::single_buffer_iter_sentinel(); }
+    constexpr auto end() const noexcept { return detail::single_buffer_iter_sentinel(); }
 };
 
 }  // namespace neo::detail
