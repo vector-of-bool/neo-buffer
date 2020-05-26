@@ -26,17 +26,4 @@ class proto_buffer_source {
     void               consume(std::size_t);
 };
 
-template <buffer_source T>
-[[nodiscard]] constexpr bool buffer_source_known_empty(T&& t) noexcept {
-    constexpr bool has_empty = requires {
-        { t.empty() }
-        ->simple_boolean;
-    };
-    if constexpr (has_empty) {
-        return t.empty();
-    } else {
-        return false;
-    }
-}
-
 }  // namespace neo
