@@ -2,8 +2,6 @@
 
 #include <neo/buffer_range.hpp>
 
-#include <neo/concepts.hpp>
-
 namespace neo {
 
 /**
@@ -19,7 +17,7 @@ concept buffer_source =
     };
 // clang-format on
 
-class proto_buffer_source {
+struct proto_buffer_source {
     proto_buffer_source() = delete;
 
     proto_buffer_range data(std::size_t);
