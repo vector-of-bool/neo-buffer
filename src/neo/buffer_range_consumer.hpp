@@ -24,11 +24,10 @@ public:
     using buffer_type = buffer_range_value_t<BaseRange>;
 
 private:
-    inner_buffer_iterator _seq_it;
-    inner_buffer_sentinel _seq_stop;
+    inner_buffer_iterator                       _seq_it;
+    [[no_unique_address]] inner_buffer_sentinel _seq_stop;
 
-    std::size_t _size_remaining = 0;
-    std::size_t _elem_offset    = 0;
+    std::size_t _elem_offset = 0;
 
     constexpr static std::size_t _small_size = 16;
 
@@ -36,11 +35,9 @@ public:
     template <alike<BaseRange> Seq>
     constexpr explicit buffer_range_consumer(Seq&& seq)
         : _seq_it(std::begin(seq))
-        , _seq_stop(std::end(seq))
-        , _size_remaining(buffer_size(seq)) {}
+        , _seq_stop(std::end(seq)) {}
 
-    [[nodiscard]] constexpr std::size_t bytes_remaining() const noexcept { return _size_remaining; }
-    [[nodiscard]] constexpr bool        empty() const noexcept { return bytes_remaining() == 0; }
+    [[nodiscard]] constexpr bool empty() const noexcept { return _seq_it == _seq_stop; }
 
     [[nodiscard]] constexpr auto prepare(std::size_t n_to_prepare) const noexcept {
         // Build a small vector of buffers from the whole sequence
@@ -78,11 +75,9 @@ public:
 
     constexpr void consume(std::size_t size) noexcept {
         neo_assert(expects,
-                   size <= bytes_remaining(),
+                   !empty(),
                    "Attempted to consume more bytes than are available in a buffer_range_consumer",
-                   size,
-                   bytes_remaining());
-        _size_remaining -= size;
+                   size);
         while (_seq_it != _seq_stop && size != 0) {
             auto buf = next_contiguous();
             if (size < buf.size()) {
@@ -124,8 +119,7 @@ public:
 
     [[nodiscard]] constexpr buffer_type next_contiguous() const noexcept { return _buf; }
 
-    [[nodiscard]] constexpr std::size_t bytes_remaining() const noexcept { return _buf.size(); }
-    [[nodiscard]] constexpr bool        empty() const noexcept { return bytes_remaining() == 0; }
+    [[nodiscard]] constexpr bool empty() const noexcept { return _buf.empty(); }
 };
 
 template <typename T>

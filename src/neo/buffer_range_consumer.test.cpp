@@ -26,11 +26,7 @@ TEST_CASE("Consume some buffers") {
 
     // Consume on buffer boundaries
     cbs = neo::buffer_range_consumer{bufs};
-    CHECK(cbs.bytes_remaining() == 12);
-    cbs.consume(2);
-    CHECK(cbs.bytes_remaining() == 10);
-    cbs.consume(2);
-    CHECK(cbs.bytes_remaining() == 8);
+    cbs.consume(4);
     CHECK(cbs.next_contiguous().equals_string("bark"sv));
 }
 
