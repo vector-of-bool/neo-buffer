@@ -19,9 +19,9 @@ namespace neo {
 // clang-format off
 template <typename T>
 concept buffer_range =
-    requires(T&& t) {
-        { std::begin(NEO_FWD(t)) } -> buffer_iterator;
-        { std::end(NEO_FWD(t)) } -> sentinel_for<decltype(std::begin(NEO_FWD(t)))>;
+    requires(T& t) {
+        { std::begin(t) } -> buffer_iterator;
+        { std::end(t) } -> sentinel_for<decltype(std::begin(t))>;
     };
 
 template <buffer_range T>
