@@ -48,7 +48,7 @@ concept as_buffer_convertible_check =
 
 }  // namespace detail
 
-inline namespace cpo {
+namespace cpo {
 
 inline constexpr struct as_buffer_fn {
     /**
@@ -103,8 +103,9 @@ inline constexpr struct as_buffer_fn {
         return mutable_buffer(ptr, size);
     }
 } as_buffer;
-
 }  // namespace cpo
+
+using namespace cpo;
 
 template <typename T>
 concept as_buffer_convertible = requires(T&& val) {
@@ -112,7 +113,7 @@ concept as_buffer_convertible = requires(T&& val) {
 };
 
 template <as_buffer_convertible T>
-using as_buffer_t = decltype(as_buffer(ref_v<T>));
+using as_buffer_t = decltype(as_buffer(std::declval<T>()));
 
 /**
  * Create a buffer that views the representation of a buffer_safe object.
