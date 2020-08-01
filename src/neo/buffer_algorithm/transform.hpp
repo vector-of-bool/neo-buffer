@@ -236,4 +236,42 @@ constexpr auto buffer_transform(Tr&& tr, Out&& dyn_out, In&& in, Args&&... args)
     return ret;
 }
 
+template <typename... Args, typename Out, buffer_source In, buffer_transformer<Args...> Tr>
+constexpr auto buffer_transform(Tr&& tr, Out&& out, In&& in, Args&&... args)  //
+    requires requires {
+    buffer_transform(tr, out, in.data(1), args...);
+}
+{
+    using result_type               = buffer_transform_result_t<Tr, Args...>;
+    constexpr std::size_t read_size = 1024;
+
+    result_type res_acc;
+
+    while (true) {
+        auto       more_input = in.data(read_size);
+        const auto in_size    = buffer_size(more_input);
+        if (in_size == 0) {
+            // There is nothing more to read
+            break;
+        }
+        // Transform this input segment:
+        const auto part_res = buffer_transform(tr, out, more_input, args...);
+        // Accumulate:
+        res_acc += part_res;
+        // Discard the bytes that we fed down:
+        in.consume(part_res.bytes_read);
+        if (part_res.bytes_read != in_size) {
+            // The transformer did not consume the entire input buffer. This means
+            // that it needs more room in the output and cannot take any more. Stop.
+            break;
+        }
+        if (part_res.done) {
+            // The transformer has signalled us to stop
+            break;
+        }
+        // The entire input buffer was consumed. Go around again to read more data
+    }
+    return res_acc;
+}
+
 }  // namespace neo
