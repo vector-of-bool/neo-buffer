@@ -1,25 +1,14 @@
 #pragma once
 
-#include <neo/as_buffer.hpp>
-#include <neo/buffer_algorithm.hpp>
+#include <neo/buffer_algorithm/copy.hpp>
+#include <neo/buffer_algorithm/size.hpp>
 #include <neo/const_buffer.hpp>
-#include <neo/dynamic_buffer.hpp>
 #include <neo/mutable_buffer.hpp>
 
-#include <neo/assert.hpp>
-
-#include <cstdint>
 #include <iterator>
-#include <limits>
 #include <memory>
 
 namespace neo {
-
-template <typename Bytes>
-class dynamic_bytes_buffer;
-
-template <typename T>
-dynamic_bytes_buffer(T) -> dynamic_bytes_buffer<T>;
 
 /**
  * Represents a contiguous mutable array of bytes with no implied encoding.
@@ -162,7 +151,7 @@ public:
     constexpr static basic_bytes copy(Bufs buf) noexcept {
         basic_bytes ret;
         ret.resize(neo::buffer_size(buf), uninit);
-        neo::buffer_copy(neo::as_buffer(ret), buf);
+        neo::buffer_copy(neo::mutable_buffer(ret), buf);
         return ret;
     }
 
@@ -303,9 +292,6 @@ public:
      */
     constexpr pointer resize(size_type size, uninit_t) noexcept { return _resize_uninit(size); }
 
-    [[nodiscard]] constexpr friend auto as_dynamic_buffer(basic_bytes& b) noexcept {
-        return dynamic_bytes_buffer(b);
-    }
     [[nodiscard]] constexpr friend bool operator==(const basic_bytes& lhs,
                                                    const_buffer       rhs) noexcept {
         if (lhs.size() != rhs.size()) {
@@ -342,89 +328,5 @@ public:
 };
 
 using bytes = basic_bytes<std::allocator<std::byte>>;
-
-template <typename Allocator>
-class dynamic_bytes_buffer<basic_bytes<Allocator>> {
-public:
-    using bytes_type = basic_bytes<Allocator>;
-    using size_type  = typename bytes_type::size_type;
-
-    using const_buffers_type   = const_buffer;
-    using mutable_buffers_type = mutable_buffer;
-
-private:
-    bytes_type* _bytes = nullptr;
-
-public:
-    constexpr explicit dynamic_bytes_buffer(bytes_type& b)
-        : _bytes(&b) {}
-
-    [[nodiscard]] constexpr size_type               size() const noexcept { return _bytes->size(); }
-    [[nodiscard]] [[nodiscard]] constexpr size_type max_size() const noexcept {
-        return std::numeric_limits<size_type>::max();
-    }
-    [[nodiscard]] constexpr size_type capacity() const noexcept { return size(); }
-
-    constexpr mutable_buffers_type grow(size_type more) noexcept {
-        const auto ptr = _bytes->resize(size() + more);
-        return mutable_buffers_type(ptr, more);
-    }
-
-    [[nodiscard]] constexpr const_buffers_type data(size_type position,
-                                                    size_type size_) const noexcept {
-        neo_assert(expects,
-                   position <= size(),
-                   "Attempted to access data beyond-the-end of a bytes object",
-                   position,
-                   size_,
-                   size());
-        const auto remaining = size() - position;
-        const auto minsize   = (size_ < remaining) ? size_ : remaining;
-        return const_buffers_type(_bytes->data() + position, minsize);
-    }
-
-    [[nodiscard]] constexpr mutable_buffers_type data(size_type position,
-                                                      size_type size_) noexcept {
-        neo_assert(expects,
-                   position <= size(),
-                   "Attempted to access data beyond-the-end of a bytes object",
-                   position,
-                   size_,
-                   size());
-        const auto remaining = size() - position;
-        const auto minsize   = (size_ < remaining) ? size_ : remaining;
-        return mutable_buffers_type(_bytes->data() + position, minsize);
-    }
-
-    constexpr void shrink(size_type remove_size) noexcept {
-        const auto new_size =
-            // If the remove_size is greater than our own size,
-            (remove_size > size())
-            // Size will be zero
-            ? 0
-            // Otherwize size will just be the current size with N bytes removed
-            : (size() - remove_size);
-        resize(new_size);
-    }
-
-    constexpr void consume(size_type n_bytes) noexcept {
-        const auto to_remove = (n_bytes > size()) ? size() : n_bytes;
-
-        auto       dest = _bytes->data();
-        auto       src  = dest + to_remove;
-        const auto stop = _bytes->data_end();
-        for (; src != stop; ++src, ++dest) {
-            *dest = *src;
-        }
-
-        neo_assert(invariant,
-                   to_remove <= size(),
-                   "Should never remove more bytes than are available.",
-                   to_remove,
-                   size());
-        const auto new_size = size() - to_remove;
-        resize(new_size);
-    }
-};
 
 }  // namespace neo

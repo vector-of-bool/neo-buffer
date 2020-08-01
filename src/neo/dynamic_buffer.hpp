@@ -1,13 +1,10 @@
 #pragma once
 
 #include <neo/buffer_range.hpp>
-#include <neo/const_buffer.hpp>
-#include <neo/mutable_buffer.hpp>
 
 #include <neo/concepts.hpp>
 
 #include <cstddef>
-#include <cstdlib>
 
 namespace neo {
 
@@ -43,8 +40,6 @@ concept dynamic_buffer = requires(DynBuf buf,
     buf.shrink(size);
     buf.consume(size);
 };
-
-NEO_TEST_CONCEPT(dynamic_buffer<proto_dynamic_buffer>);
 
 // clang-format on
 
