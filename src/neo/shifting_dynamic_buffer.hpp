@@ -34,8 +34,8 @@ public:
         : _storage(NEO_FWD(s))
         , _size(size) {}
 
-    constexpr storage_type&       storage() noexcept { return _storage; }
-    constexpr const storage_type& storage() const noexcept { return _storage; }
+    constexpr auto& storage() noexcept { return unref(_storage); }
+    constexpr auto& storage() const noexcept { return unref(_storage); }
 
     constexpr auto max_size() const noexcept { return storage().max_size(); }
     constexpr auto size() const noexcept { return _size; }
@@ -110,9 +110,9 @@ public:
 };  // namespace neo
 
 template <typename S>
-explicit shifting_dynamic_buffer(S &&)->shifting_dynamic_buffer<S>;
+explicit shifting_dynamic_buffer(S &&) -> shifting_dynamic_buffer<S>;
 
 template <typename S>
-shifting_dynamic_buffer(S&&, std::size_t)->shifting_dynamic_buffer<S>;
+shifting_dynamic_buffer(S&&, std::size_t) -> shifting_dynamic_buffer<S>;
 
 }  // namespace neo
