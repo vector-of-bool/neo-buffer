@@ -7,7 +7,6 @@
 #include <neo/fwd.hpp>
 
 #include <limits>
-#include <string>
 
 namespace neo {
 
