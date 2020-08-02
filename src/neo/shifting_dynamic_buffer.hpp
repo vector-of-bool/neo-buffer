@@ -39,7 +39,7 @@ public:
 
     constexpr auto max_size() const noexcept { return storage().max_size(); }
     constexpr auto size() const noexcept { return _size; }
-    constexpr auto capacity() const noexcept { return storage().capacity() - _beg_idx; }
+    constexpr auto capacity() const noexcept { return storage().size() - _beg_idx; }
 
     constexpr auto data(std::size_t pos, std::size_t size_) const
         noexcept(noexcept(storage().data(0, 0))) {
@@ -110,9 +110,9 @@ public:
 };  // namespace neo
 
 template <typename S>
-explicit shifting_dynamic_buffer(S &&) -> shifting_dynamic_buffer<S>;
+explicit shifting_dynamic_buffer(S &&)->shifting_dynamic_buffer<S>;
 
 template <typename S>
-shifting_dynamic_buffer(S&&, std::size_t) -> shifting_dynamic_buffer<S>;
+shifting_dynamic_buffer(S&&, std::size_t)->shifting_dynamic_buffer<S>;
 
 }  // namespace neo
