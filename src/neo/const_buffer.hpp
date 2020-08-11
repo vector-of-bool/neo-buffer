@@ -46,4 +46,12 @@ public:
     }
 };
 
+inline namespace literals {
+inline namespace buffer_literals {
+constexpr const_buffer operator""_buf(const char* first, std::size_t count) noexcept {
+    return const_buffer(byte_pointer(first), count);
+}
+}  // namespace buffer_literals
+}  // namespace literals
+
 }  // namespace neo

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <neo/buffer_range_consumer.hpp>
+#include <neo/buffers_consumer.hpp>
 #include <neo/dynamic_buffer.hpp>
 #include <neo/io_buffer.hpp>
 
@@ -67,9 +67,9 @@ template <mutable_buffer_range Out,
           buffer_transformer<Args...> Tr>
 constexpr auto buffer_transform(Tr&& tr, Out&& out_, In&& in_, Args&&... args) {
     using result_type = buffer_transform_result_t<Tr, Args...>;
-    buffer_range_consumer out{out_};
-    buffer_range_consumer in{in_};
-    result_type           acc_res;
+    buffers_consumer out{out_};
+    buffers_consumer in{in_};
+    result_type      acc_res;
 
     while (true) {
         auto part_out = out.next_contiguous();
@@ -135,7 +135,7 @@ constexpr auto buffer_transform(Tr&& tr, Out&& out, In&& in_, Args&&... args) {
     static_assert(growth_size > 0);
 
     // The input consumer
-    buffer_range_consumer in{in_};
+    buffers_consumer in{in_};
     // The result accumulator
     result_type acc_res;
 
@@ -156,7 +156,7 @@ constexpr auto buffer_transform(Tr&& tr, Out&& out, In&& in_, Args&&... args) {
         // Prepare the next output area
         auto next_out_area = out.prepare(growth_size);
         // A consumer for that output area
-        buffer_range_consumer next_out{next_out_area};
+        buffers_consumer next_out{next_out_area};
         // Keep track of how much we actually transform on this loop step
         std::size_t n_written_this_step = 0;
 

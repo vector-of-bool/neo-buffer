@@ -2,7 +2,6 @@
 
 #include <neo/buffer_algorithm/size.hpp>
 #include <neo/buffer_range.hpp>
-#include <neo/buffer_range_consumer.hpp>
 #include <neo/buffer_sink.hpp>
 #include <neo/buffer_source.hpp>
 #include <neo/dynamic_buffer.hpp>
