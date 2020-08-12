@@ -48,7 +48,16 @@ public:
         return storage().data(0, read_size);
     }
 
-    constexpr void consume(std::size_t s) { storage().consume(s); }
+    constexpr void consume(std::size_t s) {
+        neo_assert(expects,
+                   s <= _read_area_size,
+                   "Cannot consume more bytes than are available in the read-area",
+                   s,
+                   _read_area_size,
+                   _write_area_size);
+        storage().consume(s);
+        _read_area_size -= s;
+    }
 
     constexpr decltype(auto) prepare(std::size_t size) {
         if (size <= _write_area_size) {
