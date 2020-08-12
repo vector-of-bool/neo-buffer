@@ -14,7 +14,9 @@ concept buffer_sink =
 // clang-format on
 
 struct proto_buffer_sink {
-    proto_buffer_sink() = delete;
+    proto_buffer_sink()  = delete;
+    ~proto_buffer_sink() = delete;
+    void operator=(proto_buffer_sink) = delete;
 
     proto_mutable_buffer_range prepare(std::size_t);
     void                       commit(std::size_t);
