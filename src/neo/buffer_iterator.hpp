@@ -5,7 +5,6 @@
 
 #include <neo/concepts.hpp>
 #include <neo/iterator_concepts.hpp>
-#include <neo/test_concept.hpp>
 
 #include <iterator>
 
@@ -64,8 +63,5 @@ struct proto_mutable_buffer_iterator {
     bool operator!=(proto_mutable_buffer_iterator) const noexcept;
     bool operator==(proto_mutable_buffer_iterator) const noexcept;
 };
-
-NEO_TEST_CONCEPT(buffer_iterator<proto_buffer_iterator>);
-NEO_TEST_CONCEPT(mutable_buffer_iterator<proto_mutable_buffer_iterator>);
 
 }  // namespace neo
