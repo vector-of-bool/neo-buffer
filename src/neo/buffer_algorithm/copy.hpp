@@ -19,14 +19,14 @@ namespace detail {
 template <typename T>
 struct buffer_copy_shifter;
 
-template <buffer_range T>
-struct buffer_copy_shifter<T> {
-    T& range;
+template <typename T>
+struct buffer_copy_shifter<buffers_consumer<T>> {
+    buffers_consumer<T> cons;
 
-    buffers_consumer<T&> cons{range};
-
+    constexpr auto prepare(std::size_t, std::size_t) noexcept { return cons.next_contiguous(); }
     constexpr auto data(std::size_t, std::size_t) noexcept { return cons.next_contiguous(); }
-    constexpr void shift(std::size_t s) noexcept {
+    constexpr void commit(std::size_t s) noexcept { consume(s); }
+    constexpr void consume(std::size_t s) noexcept {
         NEO_ASSUME(s <= size_hint());
         cons.consume(s);
     }
@@ -35,18 +35,10 @@ struct buffer_copy_shifter<T> {
     constexpr bool        should_stop() const noexcept { return cons.empty(); }
 };
 
-template <typename T>
-struct buffer_copy_shifter<buffers_consumer<T>> {
-    buffers_consumer<T>& cons;
-
-    constexpr auto data(std::size_t, std::size_t) noexcept { return cons.next_contiguous(); }
-    constexpr void shift(std::size_t s) noexcept {
-        NEO_ASSUME(s <= size_hint());
-        cons.consume(s);
-    }
-
-    constexpr std::size_t size_hint() noexcept { return cons.next_contiguous().size(); }
-    constexpr bool        should_stop() const noexcept { return cons.empty(); }
+template <buffer_range T>
+struct buffer_copy_shifter<T> : buffer_copy_shifter<buffers_consumer<T&>> {
+    explicit buffer_copy_shifter(T& bufs)
+        : buffer_copy_shifter<buffers_consumer<T&>>{buffers_consumer{bufs}} {}
 };
 
 template <typename T>
@@ -57,22 +49,18 @@ requires(buffer_sink<T> || buffer_source<T>)  //
 
     constexpr std::size_t size_hint() { return std::size_t(1024 * 4); }
 
-    constexpr auto data(std::size_t max1, std::size_t max2) noexcept {
+    constexpr auto prepare(std::size_t max1, std::size_t max2) noexcept {
         const auto dat_size = (std::min)(size_hint(), (std::min)(max1, max2));
-        if constexpr (buffer_sink<T>) {
-            return io.prepare(dat_size);
-        } else {
-            return io.data(dat_size);
-        }
+        return io.prepare(dat_size);
     }
 
-    constexpr void shift(std::size_t s) noexcept {
-        if constexpr (buffer_sink<T>) {
-            io.commit(s);
-        } else {
-            io.consume(s);
-        }
+    constexpr auto data(std::size_t max1, std::size_t max2) noexcept {
+        const auto dat_size = (std::min)(size_hint(), (std::min)(max1, max2));
+        return io.data(dat_size);
     }
+
+    constexpr void consume(std::size_t s) noexcept { io.consume(s); }
+    constexpr void commit(std::size_t s) noexcept { io.commit(s); }
 
     constexpr bool should_stop() const noexcept { return false; }
 };
@@ -183,13 +171,13 @@ buffer_copy(Dest&& dest, Source&& src, std::size_t max_copy, Copy&& copy) noexce
 
     while (remaining != 0 && !in.should_stop() && !out.should_stop()) {
         auto in_part  = in.data(remaining, out.size_hint());
-        auto out_part = out.data(remaining, in.size_hint());
+        auto out_part = out.prepare(remaining, in.size_hint());
         auto n_copied = buffer_copy(out_part, in_part, remaining, copy);
         if (n_copied == 0) {
             break;
         }
-        in.shift(n_copied);
-        out.shift(n_copied);
+        in.consume(n_copied);
+        out.commit(n_copied);
         remaining -= n_copied;
     }
 
