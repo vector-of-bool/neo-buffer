@@ -24,11 +24,6 @@ concept has_adl_as_dynbuf = requires(T t) {
 };
 
 template <typename T>
-concept has_both_as_dynbuf =
-    has_member_as_dynbuf<T> &&
-    has_adl_as_dynbuf<T>;
-
-template <typename T>
 concept simple_resizable_byte_container =
     as_buffer_convertible<T> &&
     (sizeof(data_type_t<T>) == 1) &&
@@ -157,11 +152,18 @@ inline constexpr struct as_dynamic_buffer_fn {
 
 using namespace cpo;
 
+/**
+ * Requires that the given type support being passed to `as_dynamic_buffer`
+ */
 template <typename T>
 concept as_dynamic_buffer_convertible = requires(T t) {
     as_dynamic_buffer(NEO_FWD(t));
 };
 
+/**
+ * Obtain the type of the dynamic buffer returned by as_dynamic_buffer if given
+ * an object of type T.
+ */
 template <as_dynamic_buffer_convertible T>
 using as_dynamic_buffer_t = decltype(as_dynamic_buffer(std::declval<T>()));
 
