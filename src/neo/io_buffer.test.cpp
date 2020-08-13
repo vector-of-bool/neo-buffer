@@ -8,12 +8,10 @@
 
 #include <catch2/catch.hpp>
 
-NEO_TEST_CONCEPT(neo::dynamic_io_buffer<neo::dynamic_io_buffer_adaptor<neo::proto_dynamic_buffer>>);
-
 TEST_CASE("Create an IO adapter around std::string") {
     std::string str;
 
-    neo::dynamic_io_buffer_adaptor io(neo::as_dynamic_buffer(str));
+    neo::dynamic_io_buffer io(neo::as_dynamic_buffer(str));
 
     auto buf       = io.prepare(6);
     auto n_written = neo::buffer_copy(buf, neo::const_buffer("Hello!"));
@@ -21,11 +19,11 @@ TEST_CASE("Create an IO adapter around std::string") {
     CHECK(str == "Hello!");
 
     // There is no read area yet
-    CHECK(neo::buffer_size(io.data(1024)) == 0);
+    CHECK(neo::buffer_size(io.next(1024)) == 0);
     // Commit data from the write-area into the read-area
     io.commit(n_written);
     // Now we have data:
-    CHECK(std::string_view(io.data(1024)) == "Hello!");
+    CHECK(std::string_view(io.next(1024)) == "Hello!");
 }
 
 TEST_CASE("Create an I/O buffer adaptor that respects a restricted max_size()") {
@@ -33,5 +31,5 @@ TEST_CASE("Create an I/O buffer adaptor that respects a restricted max_size()") 
     str.resize(16);
     neo::fixed_dynamic_buffer dbuf{str};
 
-    neo::dynamic_io_buffer_adaptor io{dbuf, 0};
+    neo::dynamic_io_buffer io{dbuf, 0};
 }

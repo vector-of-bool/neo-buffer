@@ -24,7 +24,7 @@ struct buffer_copy_shifter<buffers_consumer<T>> {
     buffers_consumer<T> cons;
 
     constexpr auto prepare(std::size_t, std::size_t) noexcept { return cons.next_contiguous(); }
-    constexpr auto data(std::size_t, std::size_t) noexcept { return cons.next_contiguous(); }
+    constexpr auto next(std::size_t, std::size_t) noexcept { return cons.next_contiguous(); }
     constexpr void commit(std::size_t s) noexcept { consume(s); }
     constexpr void consume(std::size_t s) noexcept {
         NEO_ASSUME(s <= size_hint());
@@ -54,9 +54,9 @@ requires(buffer_sink<T> || buffer_source<T>)  //
         return io.prepare(dat_size);
     }
 
-    constexpr auto data(std::size_t max1, std::size_t max2) noexcept {
+    constexpr auto next(std::size_t max1, std::size_t max2) noexcept {
         const auto dat_size = (std::min)(size_hint(), (std::min)(max1, max2));
-        return io.data(dat_size);
+        return io.next(dat_size);
     }
 
     constexpr void consume(std::size_t s) noexcept { io.consume(s); }
@@ -170,7 +170,7 @@ buffer_copy(Dest&& dest, Source&& src, std::size_t max_copy, Copy&& copy) noexce
     detail::buffer_copy_shifter in{src};
 
     while (remaining != 0 && !in.should_stop() && !out.should_stop()) {
-        auto in_part  = in.data(remaining, out.size_hint());
+        auto in_part  = in.next(remaining, out.size_hint());
         auto out_part = out.prepare(remaining, in.size_hint());
         auto n_copied = buffer_copy(out_part, in_part, remaining, copy);
         if (n_copied == 0) {

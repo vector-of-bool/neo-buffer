@@ -35,9 +35,9 @@ public:
     /**
      * Construct a buffer view from a data container.
      */
-    template <data_container C>
+    template <trivial_range C>
     explicit constexpr const_buffer(const C& c) noexcept
-        : buffer_base(byte_pointer(std::data(c)), data_container_byte_size(c)) {}
+        : buffer_base(byte_pointer(std::data(c)), trivial_range_byte_size(c)) {}
 
     template <const_buffer_constructible T>
     explicit constexpr operator T() const noexcept {

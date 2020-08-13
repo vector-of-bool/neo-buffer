@@ -1,7 +1,7 @@
 #pragma once
 
+#include <neo/buffer_sink.hpp>
 #include <neo/buffers_consumer.hpp>
-#include <neo/dynamic_buffer.hpp>
 #include <neo/io_buffer.hpp>
 
 #include <neo/assert.hpp>
@@ -223,23 +223,10 @@ constexpr auto buffer_transform(Tr&& tr, Out&& out, In&& in_, Args&&... args) {
     return acc_res;
 }
 
-/**
- * Apply a buffer transformation on the given input `in_`, writing output to the
- * `dyn_out` dynamic buffer. The `dyn_out` buffer will be extended. Prior
- * content in `dyn_out` will be untouched.
- */
-template <typename... Args, dynamic_buffer Out, buffer_range In, buffer_transformer<Args...> Tr>
-constexpr auto buffer_transform(Tr&& tr, Out&& dyn_out, In&& in, Args&&... args) {
-    dynamic_io_buffer_adaptor io{dyn_out};
-    auto                      ret = buffer_transform(tr, io, in, std::forward<Args>(args)...);
-    io.shrink_uncommitted();
-    return ret;
-}
-
 template <typename... Args, typename Out, buffer_source In, buffer_transformer<Args...> Tr>
 constexpr auto buffer_transform(Tr&& tr, Out&& out, In&& in, Args&&... args)  //
     requires requires {
-    buffer_transform(tr, out, in.data(1), args...);
+    buffer_transform(tr, out, in.next(1), args...);
 }
 {
     using result_type               = buffer_transform_result_t<Tr, Args...>;
@@ -248,7 +235,7 @@ constexpr auto buffer_transform(Tr&& tr, Out&& out, In&& in, Args&&... args)  //
     result_type res_acc;
 
     while (true) {
-        auto       more_input = in.data(read_size);
+        auto       more_input = in.next(read_size);
         const auto in_size    = buffer_size(more_input);
         if (in_size == 0) {
             // There is nothing more to read

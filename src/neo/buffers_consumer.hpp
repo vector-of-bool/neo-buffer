@@ -48,7 +48,12 @@ public:
         return _seq_it == _seq_stop || _remaining == 0;
     }
 
-    [[nodiscard]] constexpr auto prepare(std::size_t n_to_prepare) const noexcept {
+    [[nodiscard]] constexpr auto prepare(std::size_t n_to_prepare) const noexcept
+        requires(mutable_buffer_range<BaseRange>) {
+        return next(n_to_prepare);
+    }
+
+    [[nodiscard]] constexpr auto next(std::size_t n_to_prepare) const noexcept {
         // Build a small vector of buffers from the whole sequence
         static_buffer_vector<buffer_type, _small_size> bufs;
         // Keep track of how far into the first buffer we are skipping
@@ -72,10 +77,6 @@ public:
             elem_offset = 0;
         }
         return bufs;
-    }
-
-    [[nodiscard]] constexpr auto data(std::size_t n_to_prepare) const noexcept {
-        return prepare(n_to_prepare);
     }
 
     [[nodiscard]] constexpr buffer_type next_contiguous() const noexcept {
@@ -113,7 +114,9 @@ public:
                    consume_size);
     }
 
-    constexpr void commit(std::size_t size) noexcept { consume(size); }
+    constexpr void commit(std::size_t size) noexcept requires(mutable_buffer_range<BaseRange>) {
+        consume(size);
+    }
 };
 
 template <single_buffer T>
@@ -131,13 +134,14 @@ public:
     constexpr buffers_consumer(buffer_type b, std::size_t clamp)
         : _buf(as_buffer(b, clamp)) {}
 
-    [[nodiscard]] constexpr auto prepare(std::size_t n) const noexcept {
+    [[nodiscard]] constexpr auto prepare(std::size_t n) const noexcept
+        requires(mutable_buffer_range<T>) {
         return as_buffer(_buf, n);
     }
-    [[nodiscard]] constexpr auto data(std::size_t n) const noexcept { return as_buffer(_buf, n); }
+    [[nodiscard]] constexpr auto next(std::size_t n) const noexcept { return as_buffer(_buf, n); }
 
     constexpr void consume(std::size_t n) noexcept { _buf += n; }
-    constexpr void commit(std::size_t n) noexcept { consume(n); }
+    constexpr void commit(std::size_t n) noexcept requires(mutable_buffer_range<T>) { consume(n); }
 
     [[nodiscard]] constexpr buffer_type next_contiguous() const noexcept { return _buf; }
 

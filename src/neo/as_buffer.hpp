@@ -2,8 +2,8 @@
 
 #include <neo/byte_pointer.hpp>
 #include <neo/const_buffer.hpp>
-#include <neo/data_container_concepts.hpp>
 #include <neo/mutable_buffer.hpp>
+#include <neo/trivial_range.hpp>
 
 #include <neo/concepts.hpp>
 #include <neo/fwd.hpp>

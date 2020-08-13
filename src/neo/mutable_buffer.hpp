@@ -1,8 +1,8 @@
 #pragma once
 
-#include <neo/data_container_concepts.hpp>
 #include <neo/detail/buffer_base.hpp>
 #include <neo/detail/single_buffer_iter.hpp>
+#include <neo/trivial_range.hpp>
 
 #include <cstddef>
 #include <iterator>
@@ -17,9 +17,9 @@ public:
     /**
      * Create an instance of the buffer from the given container of mutable data
      */
-    template <mutable_data_container C>
+    template <mutable_trivial_range C>
     explicit constexpr mutable_buffer(C&& c) noexcept
-        : buffer_base(byte_pointer(std::data(c)), data_container_byte_size(c)) {}
+        : buffer_base(byte_pointer(std::data(c)), trivial_range_byte_size(c)) {}
 
     template <mutable_buffer_constructible T>
     explicit constexpr operator T() const noexcept {

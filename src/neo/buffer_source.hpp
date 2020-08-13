@@ -12,7 +12,7 @@ namespace neo {
 template <typename T>
 concept buffer_source =
     requires (T source, std::size_t size) {
-        { source.data(size) } -> buffer_range;
+        { source.next(size) } -> buffer_range;
         source.consume(size);
     };
 // clang-format on
@@ -20,7 +20,7 @@ concept buffer_source =
 struct proto_buffer_source {
     proto_buffer_source() = delete;
 
-    proto_buffer_range data(std::size_t);
+    proto_buffer_range next(std::size_t);
     void               consume(std::size_t);
 };
 

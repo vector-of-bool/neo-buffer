@@ -5,6 +5,7 @@
 #include <neo/buffer_algorithm/count.hpp>
 #include <neo/buffer_algorithm/size.hpp>
 #include <neo/buffer_algorithm/transform.hpp>
+#include <neo/io_buffer.hpp>
 #include <neo/platform.hpp>
 
 #include <neo/test_concept.hpp>
@@ -28,9 +29,11 @@ void check_buffer_str(R&& r, std::string_view expect) {
 #define CHECK_BUFFER_STR(Buf, String)                                                              \
     do {                                                                                           \
         std::string result;                                                                        \
-        neo::buffer_transform(neo::buffer_copy_transformer(),                                      \
-                              neo::as_dynamic_buffer(result),                                      \
-                              Buf);                                                                \
+                                                                                                   \
+        auto size = neo::buffer_transform(neo::buffer_copy_transformer(),                          \
+                                          neo::dynamic_io_buffer(result),                          \
+                                          Buf);                                                    \
+        result.resize(size.bytes_written);                                                         \
         CHECK(result == String);                                                                   \
     } while (0)
 

@@ -36,7 +36,8 @@ template <typename T>
 concept as_dynamic_buffer_convertible_check =
        has_member_as_dynbuf<T>
     || has_adl_as_dynbuf<T>
-    || simple_resizable_byte_container<T>;
+    || simple_resizable_byte_container<T>
+    || dynamic_buffer<T>;
 
 template <typename C>
 concept container_has_capacity = requires(const C c) { c.capacity(); };
@@ -143,8 +144,11 @@ inline constexpr struct as_dynamic_buffer_fn {
             return NEO_FWD(what).as_dynamic_buffer();
         } else if constexpr (detail::has_adl_as_dynbuf<T>) {
             return as_dynamic_buffer(NEO_FWD(what));
-        } else {
+        } else if constexpr (detail::simple_resizable_byte_container<T>) {
             return dynamic_buffer_byte_container_adaptor(NEO_FWD(what));
+        } else {
+            static_assert(dynamic_buffer<T>);
+            return NEO_FWD(what);
         }
     }
 } as_dynamic_buffer;

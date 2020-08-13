@@ -16,11 +16,11 @@ TEST_CASE("Consume some buffers") {
 
     std::string str;
     str.resize(6);
-    auto n_copied = buffer_copy(neo::mutable_buffer(str), cbs.prepare(8));
+    auto n_copied = buffer_copy(neo::mutable_buffer(str), cbs.next(8));
     CHECK(n_copied == 6);
     CHECK(str == "meowba");
     cbs.consume(n_copied);
-    n_copied = buffer_copy(neo::mutable_buffer(str), cbs.prepare(200));
+    n_copied = buffer_copy(neo::mutable_buffer(str), cbs.next(200));
     CHECK(n_copied == 6);
     CHECK(str == "rksing");
 
@@ -38,7 +38,7 @@ TEST_CASE("Consume some buffers") {
 
     cbs      = neo::buffers_consumer{bufs};
     str      = "1234567890";
-    n_copied = buffer_copy(neo::as_buffer(str), cbs.prepare(6));
+    n_copied = buffer_copy(neo::as_buffer(str), cbs.next(6));
     CHECK(n_copied == 6);
     CHECK(str == "meowba7890");
 }
@@ -48,16 +48,16 @@ TEST_CASE("Buffer consumer for singular buffers") {
 
     std::string str;
     str.resize(9);
-    auto n_copied = buffer_copy(neo::mutable_buffer(str), bufs.prepare(16));
+    auto n_copied = buffer_copy(neo::mutable_buffer(str), bufs.next(16));
     CHECK(n_copied == 9);
     CHECK(str == "Just one ");
     // Copying again will just copy the same bytes
-    auto n_copied_2 = buffer_copy(neo::mutable_buffer(str), bufs.prepare(6));
+    auto n_copied_2 = buffer_copy(neo::mutable_buffer(str), bufs.next(6));
     CHECK(n_copied_2 == 6);
     CHECK(str == "Just one ");
     // Copy the rest
     bufs.consume(n_copied);
-    n_copied = buffer_copy(neo::mutable_buffer(str), bufs.prepare(str.size()));
+    n_copied = buffer_copy(neo::mutable_buffer(str), bufs.next(str.size()));
     CHECK(n_copied == 6);
     CHECK(str == "bufferne ");  // Copied over the top of the prior string
 }

@@ -15,9 +15,11 @@ TEST_CASE("Create a simple adapter") {
     std::string              full_str;
 
     neo::buffer_range_adaptor adapted_strings{strings};
-    neo::buffer_transform(neo::buffer_copy_transformer{},
-                          neo::as_dynamic_buffer(full_str),
-                          adapted_strings);
 
+    auto size = neo::buffer_transform(neo::buffer_copy_transformer{},
+                                      neo::dynamic_io_buffer(full_str),
+                                      adapted_strings)
+                    .bytes_written;
+    full_str.resize(size);
     CHECK(full_str == "Hello, world!");
 }
