@@ -27,8 +27,9 @@ public:
         : _dyn_buf(NEO_FWD(db))
         , _read_area_size(read_area_size) {}
 
-    constexpr auto& storage() noexcept { return unref(_dyn_buf); }
-    constexpr auto& storage() const noexcept { return unref(_dyn_buf); }
+    constexpr auto&          storage() & noexcept { return unref(_dyn_buf); }
+    constexpr auto&          storage() const& noexcept { return unref(_dyn_buf); }
+    constexpr decltype(auto) storage() && noexcept { return unref(NEO_FWD(_dyn_buf)); }
 
     constexpr decltype(auto) buffer() noexcept { return as_dynamic_buffer(storage()); }
     constexpr decltype(auto) buffer() const noexcept { return as_dynamic_buffer(storage()); }
