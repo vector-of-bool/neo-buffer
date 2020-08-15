@@ -1,24 +1,14 @@
 #pragma once
 
-#include <neo/buffer_algorithm.hpp>
-#include <neo/buffer_concepts.hpp>
+#include <neo/buffer_algorithm/copy.hpp>
+#include <neo/buffer_algorithm/size.hpp>
 #include <neo/const_buffer.hpp>
-#include <neo/dynamic_buffer.hpp>
 #include <neo/mutable_buffer.hpp>
 
-#include <cassert>
-#include <cstdint>
 #include <iterator>
-#include <limits>
 #include <memory>
 
 namespace neo {
-
-template <typename Bytes>
-class dynamic_bytes_buffer;
-
-template <typename T>
-dynamic_bytes_buffer(T) -> dynamic_bytes_buffer<T>;
 
 /**
  * Represents a contiguous mutable array of bytes with no implied encoding.
@@ -155,13 +145,13 @@ public:
     }
 
     /**
-     * Construct a byte array by copying the contents of the given const_buffer
+     * Construct a byte array by copying the contents of the given buffer sequence
      */
-    template <const_buffer_sequence Bufs>
+    template <buffer_range Bufs>
     constexpr static basic_bytes copy(Bufs buf) noexcept {
         basic_bytes ret;
         ret.resize(neo::buffer_size(buf), uninit);
-        neo::buffer_copy(as_buffer(ret), buf);
+        neo::buffer_copy(neo::mutable_buffer(ret), buf);
         return ret;
     }
 
@@ -180,8 +170,8 @@ public:
         resize(other.size(), uninit);
         // Copy the data
         const auto my_stop = data_end();
-        auto my_it = data();
-        auto ot_it = other.data();
+        auto       my_it   = data();
+        auto       ot_it   = other.data();
         for (; my_it != my_stop; ++my_it, ++ot_it) {
             *my_it = *ot_it;
         }
@@ -245,23 +235,23 @@ public:
     /**
      * Get the allocator for this bytes object
      */
-    constexpr allocator_type get_allocator() const noexcept { return _alloc; }
+    [[nodiscard]] constexpr allocator_type get_allocator() const noexcept { return _alloc; }
 
     /**
      * Get the current size of the bytes object
      */
-    constexpr size_type size() const noexcept { return _size; }
+    [[nodiscard]] constexpr size_type size() const noexcept { return _size; }
 
     /**
      * Obtain a pointer to the beginning of the data.
      */
-    constexpr pointer       data() noexcept { return _bytes_ptr; }
-    constexpr const_pointer data() const noexcept { return _bytes_ptr; }
+    [[nodiscard]] constexpr pointer       data() noexcept { return _bytes_ptr; }
+    [[nodiscard]] constexpr const_pointer data() const noexcept { return _bytes_ptr; }
     /**
      * Obtain the past-the-end pointer to the data.
      */
-    constexpr pointer       data_end() noexcept { return data() + size(); }
-    constexpr const_pointer data_end() const noexcept { return data() + size(); }
+    [[nodiscard]] constexpr pointer       data_end() noexcept { return data() + size(); }
+    [[nodiscard]] constexpr const_pointer data_end() const noexcept { return data() + size(); }
 
     /**
      * Deallocate the bytes and set the size to zero.
@@ -302,20 +292,8 @@ public:
      */
     constexpr pointer resize(size_type size, uninit_t) noexcept { return _resize_uninit(size); }
 
-    constexpr operator const_buffer() const noexcept { return const_buffer(data(), size()); }
-    constexpr operator mutable_buffer() noexcept { return mutable_buffer(data(), size()); }
-
-    constexpr friend const_buffer as_buffer(const basic_bytes& b) noexcept {
-        return const_buffer(b);
-    }
-
-    constexpr friend mutable_buffer as_buffer(basic_bytes& b) noexcept { return mutable_buffer(b); }
-
-    constexpr friend auto as_dynamic_buffer(basic_bytes& b) noexcept {
-        return dynamic_bytes_buffer(b);
-    }
-
-    constexpr friend bool operator==(const basic_bytes& lhs, const_buffer rhs) noexcept {
+    [[nodiscard]] constexpr friend bool operator==(const basic_bytes& lhs,
+                                                   const_buffer       rhs) noexcept {
         if (lhs.size() != rhs.size()) {
             return false;
         }
@@ -327,93 +305,28 @@ public:
         }
         return true;
     }
-
-    constexpr friend bool operator==(const basic_bytes& lhs, const basic_bytes& rhs) noexcept {
+    [[nodiscard]] constexpr friend bool operator==(const basic_bytes& lhs,
+                                                   const basic_bytes& rhs) noexcept {
         return lhs == const_buffer(rhs);
     }
-
-    constexpr friend bool operator==(const_buffer lhs, const basic_bytes& rhs) noexcept {
+    [[nodiscard]] constexpr friend bool operator==(const_buffer       lhs,
+                                                   const basic_bytes& rhs) noexcept {
         return rhs == lhs;
     }
-
-    constexpr friend bool operator!=(const basic_bytes& lhs, const basic_bytes& rhs) noexcept {
+    [[nodiscard]] constexpr friend bool operator!=(const basic_bytes& lhs,
+                                                   const basic_bytes& rhs) noexcept {
         return !(lhs == rhs);
     }
-
-    constexpr friend bool operator!=(const basic_bytes& lhs, const_buffer rhs) noexcept {
+    [[nodiscard]] constexpr friend bool operator!=(const basic_bytes& lhs,
+                                                   const_buffer       rhs) noexcept {
         return !(lhs == rhs);
     }
-
-    constexpr friend bool operator!=(const_buffer lhs, const basic_bytes& rhs) noexcept {
+    [[nodiscard]] constexpr friend bool operator!=(const_buffer       lhs,
+                                                   const basic_bytes& rhs) noexcept {
         return !(rhs == lhs);
     }
 };
 
 using bytes = basic_bytes<std::allocator<std::byte>>;
-
-template <typename Allocator>
-class dynamic_bytes_buffer<basic_bytes<Allocator>> {
-public:
-    using bytes_type = basic_bytes<Allocator>;
-    using size_type  = typename bytes_type::size_type;
-
-    using const_buffers_type   = const_buffer;
-    using mutable_buffers_type = mutable_buffer;
-
-private:
-    bytes_type* _bytes = nullptr;
-
-public:
-    constexpr explicit dynamic_bytes_buffer(bytes_type& b)
-        : _bytes(&b) {}
-
-    constexpr size_type size() const noexcept { return _bytes->size(); }
-    constexpr size_type max_size() const noexcept { return std::numeric_limits<size_type>::max(); }
-    constexpr size_type capacity() const noexcept { return size(); }
-    constexpr mutable_buffers_type grow(size_type more) noexcept {
-        const auto ptr = _bytes->resize(size() + more);
-        return mutable_buffers_type(ptr, more);
-    }
-
-    constexpr const_buffers_type data(size_type position, size_type size_) const noexcept {
-        assert(position <= size());
-        const auto remaining = size() - position;
-        const auto minsize   = (size_ < remaining) ? size_ : remaining;
-        return const_buffers_type(_bytes->data() + position, minsize);
-    }
-
-    constexpr mutable_buffers_type data(size_type position, size_type size_) noexcept {
-        assert(position <= size());
-        const auto remaining = size() - position;
-        const auto minsize   = (size_ < remaining) ? size_ : remaining;
-        return mutable_buffers_type(_bytes->data() + position, minsize);
-    }
-
-    constexpr void shrink(size_type remove_size) noexcept {
-        const auto new_size =
-            // If the remove_size is greater than our own size,
-            (remove_size > size())
-            // Size will be zero
-            ? 0
-            // Otherwize size will just be the current size with N bytes removed
-            : (size() - remove_size);
-        resize(new_size);
-    }
-
-    constexpr void consume(size_type n_bytes) noexcept {
-        const auto to_remove = (n_bytes > size()) ? size() : n_bytes;
-
-        auto       dest = _bytes->data();
-        auto       src  = dest + to_remove;
-        const auto stop = _bytes->data_end();
-        for (; src != stop; ++src, ++dest) {
-            *dest = *src;
-        }
-
-        assert(to_remove <= size());
-        const auto new_size = size() - to_remove;
-        resize(new_size);
-    }
-};
 
 }  // namespace neo

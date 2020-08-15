@@ -1,6 +1,5 @@
 {
     "compiler_id": "gnu",
     "cxx_compiler": "g++-9",
-    "cxx_version": "c++17",
-    "cxx_flags": "-fconcepts"
+    "cxx_flags": "-fconcepts -std=c++2a"
 }

@@ -2,6 +2,11 @@
 
 #include <catch2/catch.hpp>
 
+static_assert(!neo::buffer_safe<std::string>);
+static_assert(!neo::buffer_safe<std::string[6]>);
+static_assert(neo::buffer_safe<int[6]>);
+static_assert(neo::buffer_safe<int>);
+
 TEST_CASE("Byte pointer") {
     int  i     = 0;
     auto b_ptr = neo::byte_pointer(&i);

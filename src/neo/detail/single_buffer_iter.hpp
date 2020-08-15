@@ -1,5 +1,9 @@
 #pragma once
 
+#include <neo/iterator_facade.hpp>
+
+#include <neo/assert.hpp>
+
 #include <cstddef>
 #include <iterator>
 
@@ -8,37 +12,35 @@ namespace neo::detail {
 class single_buffer_iter_sentinel {};
 
 template <typename Buffer>
-class single_buffer_iter {
+class single_buffer_iter : public iterator_facade<single_buffer_iter<Buffer>> {
     Buffer _buf;
     bool   _dead = false;
 
 public:
-    using difference_type   = std::ptrdiff_t;
-    using value_type        = Buffer;
-    using pointer           = const value_type*;
-    using reference         = const value_type&;
-    using iterator_category = std::forward_iterator_tag;
+    using sentinel_type = single_buffer_iter_sentinel;
 
-    constexpr single_buffer_iter(Buffer b) noexcept
+    constexpr single_buffer_iter() = default;
+
+    constexpr explicit single_buffer_iter(Buffer b) noexcept
         : _buf(b) {}
 
-    constexpr reference operator*() const noexcept { return _buf; }
-    constexpr pointer   operator->() const noexcept { return &_buf; }
+    constexpr Buffer dereference() const noexcept { return _buf; }
+    constexpr bool   at_end() const noexcept { return _dead; }
 
-    constexpr bool operator==(single_buffer_iter_sentinel) const noexcept { return _dead; }
-    constexpr bool operator!=(single_buffer_iter_sentinel) const noexcept { return !_dead; }
-    constexpr bool operator==(single_buffer_iter o) const noexcept { return _dead == o._dead; }
-    constexpr bool operator!=(single_buffer_iter o) const noexcept { return !(*this == o); }
+    constexpr bool equal_to(single_buffer_iter o) const noexcept { return _dead == o._dead; }
 
-    constexpr single_buffer_iter operator++(int) noexcept {
-        auto me = *this;
-        _dead   = true;
-        return me;
+    constexpr void increment() noexcept {
+        neo_assert(expects,
+                   !at_end(),
+                   "Advanced a single-buffer iterator that was already advanced");
+        _dead = true;
     }
 
-    constexpr single_buffer_iter& operator++() noexcept {
-        _dead = true;
-        return *this;
+    constexpr void decrement() noexcept {
+        neo_assert(expects,
+                   at_end(),
+                   "Rewind a single-buffer iterator that hasn't been incremented.");
+        _dead = false;
     }
 };
 

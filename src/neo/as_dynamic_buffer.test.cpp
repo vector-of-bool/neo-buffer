@@ -1,17 +1,18 @@
 #include <neo/as_dynamic_buffer.hpp>
 
-#include <neo/buffer_algorithm.hpp>
-
 #include <catch2/catch.hpp>
 
-template <neo::dynamic_buffer T>
-void check_dynbuf(T) {}
+#include <neo/test_concept.hpp>
+
+using namespace std::literals;
+
+NEO_TEST_CONCEPT(neo::dynamic_buffer<neo::dynamic_buffer_byte_container_adaptor<std::string>>);
 
 TEST_CASE("dynamic_string_buffer") {
     std::string str;
     auto        dynbuf = neo::as_dynamic_buffer(str);
-    static_assert(std::is_same_v<decltype(dynbuf), neo::dynamic_string_buffer<std::string>>);
-    check_dynbuf(dynbuf);
+    static_assert(
+        std::is_same_v<decltype(dynbuf), neo::dynamic_buffer_byte_container_adaptor<std::string&>>);
 
     CHECK(dynbuf.size() == 0);
     CHECK(dynbuf.max_size() == str.max_size());
@@ -30,17 +31,21 @@ TEST_CASE("dynamic_string_buffer") {
     // Consume some content from the front:
     dynbuf.consume(5);
     // We've moved the front:
+    CHECK(str.size() == 45);
     CHECK(str.find("a string") == 0);
 
     // Content is preserved if we grow larger:
     dynbuf.grow(200);
+    CHECK(str.size() == 245);
     CHECK(str.find("a string") == 0);
 
     // We can eat the entire buffer:
     dynbuf.consume(dynbuf.size());
     CHECK(str == "");
 
-    // Consuming more data is a no-op
-    dynbuf.consume(1);
-    CHECK(str == "");
+    // CHeck grabbing a slice of a dynamic buffer
+    str.clear();
+    str       = "Hello, world!";
+    auto part = dynbuf.data(7, 5);
+    CHECK(part.equals_string("world"sv));
 }

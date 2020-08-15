@@ -1,18 +1,17 @@
 #pragma once
 
-#include <neo/buffer_concepts.hpp>
 #include <neo/byte_pointer.hpp>
 #include <neo/const_buffer.hpp>
 #include <neo/mutable_buffer.hpp>
+#include <neo/trivial_range.hpp>
 
 #include <neo/concepts.hpp>
+#include <neo/fwd.hpp>
+#include <neo/ref.hpp>
 
-#include <array>
-#include <string>
-#include <string_view>
+#include <algorithm>
 #include <type_traits>
 #include <utility>
-#include <vector>
 
 namespace neo {
 
@@ -20,200 +19,109 @@ namespace detail {
 
 // clang-format off
 template <typename T>
-concept has_nonmember_as_buffer = requires(T&& t) {
-    { as_buffer(static_cast<T&&>(t)) } -> neo::convertible_to<const_buffer>;
+concept has_adl_as_buffer = requires(T t) {
+    { as_buffer(NEO_FWD(t)) } noexcept -> convertible_to<const_buffer>;
 };
 
 template <typename T>
-concept has_member_as_buffer = requires(T&& t) {
-    { static_cast<T&&>(t).as_buffer() } -> neo::convertible_to<const_buffer>;
+concept has_member_as_buffer = requires(T t) {
+    { NEO_FWD(t).as_buffer() } noexcept -> convertible_to<const_buffer>;
 };
 
 template <typename T>
-concept has_both_as_buffer =
-    has_nonmember_as_buffer<T> &&
-    has_member_as_buffer<T>;
+concept as_buffer_convertible_check =
+       has_member_as_buffer<T>
+    || has_adl_as_buffer<T>
+    || constructible_from<const_buffer, T>
+    || constructible_from<mutable_buffer, T>
+    ;
 // clang-format on
 
 }  // namespace detail
 
-inline namespace cpo {
+namespace cpo {
 
 inline constexpr struct as_buffer_fn {
     /**
-     * Find ADL as_buffer
+     * Convert an object into a singular buffer that views the contents of that
+     * object.
      */
-    template <detail::has_nonmember_as_buffer T>
-    constexpr decltype(auto) operator()(T&& what) const noexcept(noexcept(as_buffer(what))) {
-        return as_buffer(what);
+    template <detail::as_buffer_convertible_check T>
+    [[nodiscard]] constexpr decltype(auto) operator()(T&& what) const noexcept {
+        // First, prefer member .as_buffer()
+        if constexpr (detail::has_member_as_buffer<T>) {
+            return NEO_FWD(what).as_buffer();
+        }
+        // Second, check ADL-found
+        else if constexpr (detail::has_adl_as_buffer<T>) {
+            return as_buffer(NEO_FWD(what));
+        }
+        // Third, just check if it can convert to mutable_buffer
+        else if constexpr (std::is_constructible_v<mutable_buffer, T>) {
+            return static_cast<mutable_buffer>(NEO_FWD(what));
+        }
+        // Finally, convert to const_buffer
+        else {
+            static_assert(std::is_constructible_v<const_buffer, T>,
+                          "You should never see this. This is a bug in neo-buffer.");
+            return static_cast<const_buffer>(NEO_FWD(what));
+        }
     }
 
     /**
-     * Find member as_buffer
+     * Convert to a singular buffer, but ensure that it is no larger than `max_size`
      */
-    template <detail::has_member_as_buffer T>
-    constexpr decltype(auto) operator()(T&& what) const noexcept(noexcept(what.as_buffer())) {
-        return what.as_buffer();
+    template <detail::as_buffer_convertible_check T>
+    [[nodiscard]] constexpr decltype(auto) operator()(T&&         what,
+                                                      std::size_t max_size) const noexcept {
+        auto buf = (*this)(NEO_FWD(what));
+        if (max_size < buf.size()) {
+            return buf.first(max_size);
+        }
+        return buf;
     }
 
     /**
-     * When both are available, prefer member as_buffer
+     * Convert a std::byte pointer into a const_buffer
      */
-    template <detail::has_both_as_buffer T>
-    constexpr decltype(auto) operator()(T&& what) const noexcept(noexcept(what.as_buffer())) {
-        return what.as_buffer();
+    [[nodiscard]] constexpr const_buffer operator()(const std::byte* ptr,
+                                                    std::size_t      size) const noexcept {
+        return const_buffer(ptr, size);
     }
 
     /**
-     * Copy an existing mutable_buffer
+     * Convert a std::byte pointer to a mutable_buffer
      */
-    constexpr mutable_buffer operator()(const mutable_buffer& b) const noexcept { return b; }
-    constexpr mutable_buffer operator()(const mutable_buffer&     b,
-                                        mutable_buffer::size_type s) const noexcept {
-        return mutable_buffer(b.data(), std::min(s, b.size()));
-    }
-
-    /**
-     * Copy an existing const_buffer
-     */
-    constexpr const_buffer operator()(const const_buffer& b) const noexcept { return b; }
-    constexpr const_buffer operator()(const const_buffer&     b,
-                                      const_buffer::size_type s) const noexcept {
-        return const_buffer(b.data(), std::min(s, b.size()));
-    }
-
-    // #############################################################################
-    /**
-     * Create a mutable buffer that refers to the bytes of an array of trivial objects.
-     */
-    template <buffer_safe Trivial, std::size_t N>
-    constexpr mutable_buffer operator()(Trivial (&item)[N],
-                                        std::size_t max_size = sizeof(Trivial[N])) const noexcept {
-        auto min_size = std::min(sizeof(item), max_size);
-        return mutable_buffer(byte_pointer(std::addressof(item)), min_size);
-    }
-
-    /**
-     * Create an immutable buffer that refers to the bytes of an array of trivial objects.
-     */
-    template <buffer_safe Trivial, std::size_t N>
-    constexpr const_buffer operator()(const Trivial (&item)[N],
-                                      std::size_t max_size = sizeof(Trivial[N])) const noexcept {
-        auto min_size = std::min(sizeof(item), max_size);
-        return const_buffer(byte_pointer(std::addressof(item)), min_size);
-    }
-
-    // #############################################################################
-    /**
-     * Create a mutable buffer referring to the elements of a std::array
-     */
-    template <buffer_safe Elem, std::size_t N>
-    constexpr mutable_buffer operator()(std::array<Elem, N>& arr,
-                                        std::size_t          max_size
-                                        = sizeof(std::array<Elem, N>)) const noexcept {
-        return mutable_buffer(byte_pointer(arr.data()),
-                              std::min(max_size, arr.size() * sizeof(Elem)));
-    }
-
-    /**
-     * Create an immutable buffer referring to the elements of a std::array
-     */
-    template <buffer_safe Elem, std::size_t N>
-    constexpr const_buffer operator()(const std::array<Elem, N>& arr,
-                                      std::size_t                max_size
-                                      = sizeof(std::array<Elem, N>)) const noexcept {
-        return const_buffer(byte_pointer(arr.data()),
-                            std::min(max_size, arr.size() * sizeof(Elem)));
-    }
-
-    template <buffer_safe Elem, std::size_t N>
-    constexpr const_buffer operator()(const std::array<const Elem, N>& arr,
-                                      std::size_t                      max_size
-                                      = sizeof(std::array<const Elem, N>)) const noexcept {
-        return const_buffer(byte_pointer(arr.data()),
-                            std::min(max_size, arr.size() * sizeof(Elem)));
-    }
-
-    // #############################################################################
-    /**
-     * Create a mutable buffer referring to the characters of a basic_string object
-     */
-    template <typename Char, typename Traits, typename Alloc>
-    constexpr mutable_buffer operator()(std::basic_string<Char, Traits, Alloc>& str,
-                                        std::size_t max_size) const noexcept {
-        return mutable_buffer(byte_pointer(str.data()),
-                              std::min(max_size, str.size() * sizeof(Char)));
-    }
-
-    template <typename Char, typename Traits, typename Alloc>
-    constexpr mutable_buffer
-    operator()(std::basic_string<Char, Traits, Alloc>& str) const noexcept {
-        return (*this)(str, str.size() * sizeof(Char));
-    }
-
-    /**
-     * Create an immutable buffer refering to the characters of a basic_string object
-     */
-    template <typename Char, typename Traits, typename Alloc>
-    constexpr const_buffer operator()(const std::basic_string<Char, Traits, Alloc>& str,
-                                      std::size_t max_size) const noexcept {
-        return const_buffer(byte_pointer(str.data()),
-                            std::min(max_size, str.size() * sizeof(Char)));
-    }
-
-    template <typename Char, typename Traits, typename Alloc>
-    constexpr const_buffer
-    operator()(const std::basic_string<Char, Traits, Alloc>& str) const noexcept {
-        return (*this)(str, str.size() * sizeof(Char));
-    }
-
-    // #############################################################################
-    /**
-     * Create an immutable buffer referring to the characters of a basic_string_view
-     */
-    template <typename Char, typename Traits>
-    constexpr const_buffer operator()(std::basic_string_view<Char, Traits> sv,
-                                      std::size_t max_size) const noexcept {
-        return const_buffer(byte_pointer(sv.data()), std::min(max_size, sv.size() * sizeof(Char)));
-    }
-
-    template <typename Char, typename Traits>
-    constexpr const_buffer operator()(std::basic_string_view<Char, Traits> sv) const noexcept {
-        return (*this)(sv, sv.size() * sizeof(Char));
-    }
-
-    // #############################################################################
-    /**
-     * Create a mutable buffer to the contents of a vector of trivial objects.
-     */
-    template <buffer_safe Elem, typename Alloc>
-    constexpr mutable_buffer operator()(std::vector<Elem, Alloc>& vec,
-                                        std::size_t               max_size) const noexcept {
-        return mutable_buffer(byte_pointer(vec.data()),
-                              std::min(max_size, vec.size() * sizeof(Elem)));
-    }
-
-    template <buffer_safe Elem, typename Alloc>
-    constexpr mutable_buffer operator()(std::vector<Elem, Alloc>& vec) const noexcept {
-        return (*this)(vec, vec.size() * sizeof(Elem));
-    }
-
-    /**
-     * Create an immutable buffer to the contents of a vector of trivial objects.
-     */
-    template <buffer_safe Elem, typename Alloc>
-    constexpr const_buffer operator()(const std::vector<Elem, Alloc>& vec,
-                                      std::size_t                     max_size) const noexcept {
-        return const_buffer(byte_pointer(vec.data()),
-                            std::min(max_size, vec.size() * sizeof(Elem)));
-    }
-
-    template <buffer_safe Elem, typename Alloc>
-    constexpr const_buffer operator()(const std::vector<Elem, Alloc>& vec) const noexcept {
-        return (*this)(vec, vec.size() * sizeof(Elem));
+    [[nodiscard]] constexpr mutable_buffer operator()(std::byte*  ptr,
+                                                      std::size_t size) const noexcept {
+        return mutable_buffer(ptr, size);
     }
 } as_buffer;
-
 }  // namespace cpo
+
+using namespace cpo;
+
+/**
+ * Check that a type can be converted to a single buffer using as_buffer
+ */
+template <typename T>
+concept as_buffer_convertible = requires(T&& val) {
+    as_buffer(NEO_FWD(val));
+};
+
+/**
+ * Determine the type of buffer that will be returned by `as_buffer` if given an
+ * argument of the given type.
+ */
+template <as_buffer_convertible T>
+using as_buffer_t = decltype(as_buffer(std::declval<T>()));
+
+/**
+ * Create a buffer that views the representation of a buffer_safe object.
+ */
+template <buffer_safe_cvr T>
+constexpr auto trivial_buffer(T&& what) noexcept {
+    return as_buffer(byte_pointer(std::addressof(what)), sizeof what);
+}
 
 }  // namespace neo

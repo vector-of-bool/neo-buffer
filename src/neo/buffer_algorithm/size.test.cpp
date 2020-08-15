@@ -1,19 +1,23 @@
-#include <neo/buffer_algorithm.hpp>
+#include <neo/buffer_algorithm/copy.hpp>
+#include <neo/buffer_algorithm/size.hpp>
 
 #include <catch2/catch.hpp>
 
-#include <neo/buffer.hpp>
+#include <neo/as_buffer.hpp>
 #include <neo/const_buffer.hpp>
 #include <neo/mutable_buffer.hpp>
 
+#include <array>
+#include <cstring>
 #include <string_view>
 
-struct dummy_buffer_sequence {};
-neo::const_buffer* buffer_sequence_begin(dummy_buffer_sequence) { return nullptr; }
-neo::const_buffer* buffer_sequence_end(dummy_buffer_sequence) { return nullptr; }
+struct dummy_buffer_range {
+    neo::const_buffer* begin() const { return nullptr; }
+    neo::const_buffer* end() const { return nullptr; }
+};
 
 TEST_CASE("buffer_size of empty") {
-    dummy_buffer_sequence dbuf;
+    dummy_buffer_range dbuf;
     CHECK(neo::buffer_size(dbuf) == 0);
 }
 
@@ -41,10 +45,10 @@ TEST_CASE("buffer_size with real buffers") {
 
 TEST_CASE("Single-buf iterator") {
     auto buf      = neo::const_buffer("A string");
-    auto buf_iter = neo::buffer_sequence_begin(buf);
+    auto buf_iter = std::begin(buf);
     CHECK(buf_iter->data() == buf.data());
-    CHECK(buf_iter != neo::buffer_sequence_end(buf));
+    CHECK(buf_iter != std::end(buf));
     CHECK(neo::buffer_size(*buf_iter) == neo::buffer_size(buf));
     ++buf_iter;
-    CHECK(buf_iter == neo::buffer_sequence_end(buf));
+    CHECK(buf_iter == std::end(buf));
 }
