@@ -1,7 +1,7 @@
 #pragma once
 
-#include <neo/data_container_concepts.hpp>
 #include <neo/detail/single_buffer_iter.hpp>
+#include <neo/trivial_range.hpp>
 
 #include <neo/assert.hpp>
 

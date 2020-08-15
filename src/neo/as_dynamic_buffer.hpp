@@ -1,54 +1,14 @@
 #pragma once
 
 #include <neo/as_buffer.hpp>
+#include <neo/buffer_algorithm/copy.hpp>
 #include <neo/dynamic_buffer.hpp>
 
 #include <neo/fwd.hpp>
 
-#include <string>
-#include <vector>
+#include <limits>
 
 namespace neo {
-
-template <typename String>
-class dynamic_string_buffer {
-public:
-    using string_type = String;
-
-private:
-    std::reference_wrapper<string_type> _string;
-
-public:
-    explicit dynamic_string_buffer(string_type& str)
-        : _string(str) {}
-
-    string_type&       string() noexcept { return _string; }
-    const string_type& string() const noexcept { return _string; }
-
-    auto size() const noexcept { return string().size(); }
-    auto max_size() const noexcept { return string().max_size(); }
-    auto capacity() const noexcept { return string().capacity(); }
-
-    mutable_buffer data(std::size_t position, std::size_t size) noexcept {
-        return (mutable_buffer(string()) + position).first(size);
-    }
-
-    const_buffer data(std::size_t position, std::size_t size) const noexcept {
-        return (const_buffer(string()) + position).first(size);
-    }
-
-    mutable_buffer grow(std::size_t n) {
-        auto init_size = size();
-        string().resize(init_size + n);
-        return data(init_size, n);
-    }
-
-    void shrink(std::size_t n) noexcept { string().resize(size() - n); }
-    void consume(std::size_t n) noexcept { string().erase(0, n); }
-};
-
-template <typename T>
-dynamic_string_buffer(T) -> dynamic_string_buffer<T>;
 
 namespace detail {
 
@@ -59,44 +19,156 @@ concept has_member_as_dynbuf = requires(T t) {
 };
 
 template <typename T>
-concept has_nonmember_as_dynbuf = requires(T t) {
+concept has_adl_as_dynbuf = requires(T t) {
     { as_dynamic_buffer(NEO_FWD(t)) } -> dynamic_buffer;
 };
 
 template <typename T>
-concept has_both_as_dynbuf =
-    has_member_as_dynbuf<T> &&
-    has_nonmember_as_dynbuf<T>;
+concept simple_resizable_byte_container =
+    as_buffer_convertible<T> &&
+    (sizeof(data_type_t<T>) == 1) &&
+    requires(const std::remove_reference_t<T> c_cont, std::remove_const_t<T> cont, std::size_t size) {
+        { c_cont.size() } noexcept -> same_as<std::size_t>;
+        { cont.resize(size) };
+    };
+
+template <typename T>
+concept as_dynamic_buffer_convertible_check =
+       has_member_as_dynbuf<T>
+    || has_adl_as_dynbuf<T>
+    || simple_resizable_byte_container<T>
+    || dynamic_buffer<T>;
+
+template <typename C>
+concept container_has_capacity = requires(const C c) { c.capacity(); };
+template <typename C>
+concept container_has_max_size = requires(const C c) { c.max_size(); };
+
 // clang-format on
 
 }  // namespace detail
 
-inline namespace cpo {
+template <detail::simple_resizable_byte_container Container>
+class dynamic_buffer_byte_container_adaptor {
+public:
+    using container_type = std::remove_cvref_t<Container>;
 
+private:
+    wrap_if_reference_t<Container> _container;
+
+public:
+    constexpr dynamic_buffer_byte_container_adaptor() = default;
+    constexpr explicit dynamic_buffer_byte_container_adaptor(Container&& c)
+        : _container(NEO_FWD(c)) {}
+
+    constexpr auto& container() noexcept { return unref(_container); }
+    constexpr auto& container() const noexcept { return unref(_container); }
+
+    constexpr std::size_t size() const noexcept { return as_buffer(container()).size(); }
+    constexpr std::size_t max_size() const noexcept {
+        if constexpr (detail::container_has_max_size<Container>) {
+            return container().max_size();
+        } else {
+            return std::numeric_limits<std::size_t>::max();
+        }
+    }
+    constexpr std::size_t capacity() const noexcept {
+        if constexpr (detail::container_has_capacity<Container>) {
+            return container().capacity();
+        } else {
+            return size();
+        }
+    }
+
+    constexpr auto data(std::size_t position, std::size_t size) noexcept {
+        return (as_buffer(container()) + position).first(size);
+    }
+
+    constexpr auto data(std::size_t position, std::size_t size) const noexcept {
+        return (as_buffer(container()) + position).first(size);
+    }
+
+    constexpr mutable_buffer grow(std::size_t n) noexcept(noexcept(container().resize(n))) {
+        const auto init_size           = size();
+        const auto remaining_grow_size = max_size() - init_size;
+        neo_assert(expects,
+                   n < remaining_grow_size,
+                   "grow() would put dynamic_buffer beyond its maximum size",
+                   n,
+                   this->max_size(),
+                   this->size());
+        container().resize(init_size + n);
+        return data(init_size, n);
+    }
+
+    constexpr void shrink(std::size_t n) noexcept {
+        neo_assert(expects,
+                   n <= size(),
+                   "Cannot shrink() a dynamic buffer more than its size",
+                   n,
+                   size());
+        container().resize(size() - n);
+    }
+
+    constexpr void consume(std::size_t n_bytes) noexcept {
+        neo_assert(expects,
+                   n_bytes <= size(),
+                   "Should never remove more bytes than are available in a dynamic buffer.",
+                   n_bytes,
+                   size());
+
+        const auto dest     = data(0, size());
+        const auto src      = dest + n_bytes;
+        const auto n_copied = buffer_copy(dest, src, ll_buffer_copy_forward);
+        neo_assert(invariant,
+                   n_copied == src.size(),
+                   "Didn't copy as expected from byte container",
+                   n_copied,
+                   src.size(),
+                   dest.size(),
+                   n_bytes);
+
+        const auto new_size = size() - n_bytes;
+        container().resize(new_size);
+    }
+};
+
+template <typename T>
+explicit dynamic_buffer_byte_container_adaptor(T &&) -> dynamic_buffer_byte_container_adaptor<T>;
+
+namespace cpo {
 inline constexpr struct as_dynamic_buffer_fn {
-    template <detail::has_member_as_dynbuf T>
-    decltype(auto) operator()(T&& what) const
-        noexcept(noexcept(NEO_FWD(what).as_dynamic_buffer())) {
-        return NEO_FWD(what).as_dynamic_buffer();
+    template <detail::as_dynamic_buffer_convertible_check T>
+    constexpr decltype(auto) operator()(T&& what) const noexcept {
+        if constexpr (detail::has_member_as_dynbuf<T>) {
+            return NEO_FWD(what).as_dynamic_buffer();
+        } else if constexpr (detail::has_adl_as_dynbuf<T>) {
+            return as_dynamic_buffer(NEO_FWD(what));
+        } else if constexpr (detail::simple_resizable_byte_container<T>) {
+            return dynamic_buffer_byte_container_adaptor(NEO_FWD(what));
+        } else {
+            static_assert(dynamic_buffer<T>);
+            return NEO_FWD(what);
+        }
     }
-
-    template <detail::has_nonmember_as_dynbuf T>
-    decltype(auto) operator()(T&& what) const noexcept(noexcept(as_dynamic_buffer(NEO_FWD(what)))) {
-        return as_dynamic_buffer(NEO_FWD(what));
-    }
-
-    template <detail::has_both_as_dynbuf T>
-    decltype(auto) operator()(T&& what) const
-        noexcept(noexcept(NEO_FWD(what).as_dynamic_buffer())) {
-        return NEO_FWD(what).as_dynamic_buffer();
-    }
-
-    template <typename Char, typename Traits, typename Alloc>
-    decltype(auto) operator()(std::basic_string<Char, Traits, Alloc>& string) const noexcept {
-        return dynamic_string_buffer(string);
-    }
-
 } as_dynamic_buffer;
 }  // namespace cpo
+
+using namespace cpo;
+
+/**
+ * Requires that the given type support being passed to `as_dynamic_buffer`
+ */
+template <typename T>
+concept as_dynamic_buffer_convertible = requires(T t) {
+    as_dynamic_buffer(NEO_FWD(t));
+};
+
+/**
+ * Obtain the type of the dynamic buffer returned by as_dynamic_buffer if given
+ * an object of type T.
+ */
+template <as_dynamic_buffer_convertible T>
+using as_dynamic_buffer_t = decltype(as_dynamic_buffer(std::declval<T>()));
 
 }  // namespace neo

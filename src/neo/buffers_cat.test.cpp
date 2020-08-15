@@ -5,6 +5,7 @@
 #include <neo/buffer_algorithm/count.hpp>
 #include <neo/buffer_algorithm/size.hpp>
 #include <neo/buffer_algorithm/transform.hpp>
+#include <neo/io_buffer.hpp>
 #include <neo/platform.hpp>
 
 #include <neo/test_concept.hpp>
@@ -28,9 +29,11 @@ void check_buffer_str(R&& r, std::string_view expect) {
 #define CHECK_BUFFER_STR(Buf, String)                                                              \
     do {                                                                                           \
         std::string result;                                                                        \
-        neo::buffer_transform(neo::buffer_copy_transformer(),                                      \
-                              neo::as_dynamic_buffer(result),                                      \
-                              Buf);                                                                \
+                                                                                                   \
+        auto size = neo::buffer_transform(neo::buffer_copy_transformer(),                          \
+                                          neo::dynamic_io_buffer(result),                          \
+                                          Buf);                                                    \
+        result.resize(size.bytes_written);                                                         \
         CHECK(result == String);                                                                   \
     } while (0)
 
@@ -70,22 +73,30 @@ TEST_CASE("Concat buffer arrays") {
         = neo::buffers_cat(pair, pair, neo::const_buffer("boo"), pair);
     CHECK_BUFFER_STR(seven_bufs, "foobarfoobarboofoobar");
 
-    using complex_buffer = neo::static_buffer_vector<mutable_buffer, 42>;
+    using complex_buffer = neo::static_buffer_vector<const_buffer, 42>;
     complex_buffer bvec;
 
-    neo::buffers_seq_concat<std::array<const_buffer, 4>,
-                            neo::static_buffer_vector<mutable_buffer, 42>&,
-                            std::array<const_buffer, 2>&>
-        test = neo::buffers_cat(pair, pair, bvec, pair);
+    neo::buffers_seq_concat<complex_buffer&, std::array<const_buffer, 2>&> tail_check
+        = neo::buffers_cat(bvec, pair);
+    CHECK_BUFFER_STR(tail_check, "foobar");
 
     neo::buffers_seq_concat<std::array<const_buffer, 4>,
-                            neo::static_buffer_vector<mutable_buffer, 42>&>
-        test2 = neo::buffers_cat(pair, pair, bvec);
+                            complex_buffer&,
+                            std::array<const_buffer, 2>&>
+        test = neo::buffers_cat(pair, pair, bvec, pair);
+    CHECK_BUFFER_STR(test, "foobarfoobarfoobar");
+
+    neo::buffers_seq_concat<std::array<const_buffer, 4>, complex_buffer&> test2
+        = neo::buffers_cat(pair, pair, bvec);
+    CHECK_BUFFER_STR(test2, "foobarfoobar");
 
     auto cat1 = neo::buffers_cat(bvec, bvec);
     auto cat2 = neo::buffers_cat(bvec, bvec);
     neo::buffers_seq_concat<complex_buffer&, complex_buffer&, complex_buffer&, complex_buffer&>
         cat1_cat2 = neo::buffers_cat(cat1, cat2);
+    CHECK_BUFFER_STR(cat1_cat2, "");
+    bvec.push_back(const_buffer("123"));
+    CHECK_BUFFER_STR(cat1_cat2, "123123123123");
 }
 
 // Check the result types for each buffer concatenation operation

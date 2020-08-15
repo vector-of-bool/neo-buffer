@@ -107,10 +107,11 @@ public:
         template <std::size_t N>
         constexpr buffer_type _deref() const noexcept {
             if constexpr (N == sizeof...(Bufs)) {
-                neo_assert(expects,
-                           false,
-                           "Dereference the past-the-end iterator in a buffers_seq_concat type",
-                           sizeof...(Bufs));
+                neo_assert_always(
+                    expects,
+                    false,
+                    "Dereference the past-the-end iterator in a buffers_seq_concat type",
+                    sizeof...(Bufs));
             } else {
                 if (_iter_var.index() != N) {
                     return _deref<N + 1>();
@@ -303,7 +304,7 @@ struct bufcat_impl<A, B, Tail...> {
 };
 
 /**
- * [4]: Concatenate buffers, buf we encounter a buffer that is not simple. We
+ * [4]: Concatenate buffers, but we encounter a buffer that is not simple. We
  *      want to continue folding simple buffers, so we'll have to "defer" the
  *      concat of the head buffer into the sequence.
  *
@@ -330,8 +331,8 @@ requires(sizeof...(Tail) != 0) struct bufcat_impl<Head, Tail...> {
         using type = buffers_seq_concat<Head, Next>;
 
         /// Do it!
-        constexpr static type prepend(Head&& h, tail_result_type& tail) noexcept {
-            return type(NEO_FWD(h), std::forward<Next>(tail));
+        constexpr static type prepend(Head&& h, tail_result_type&& tail) noexcept {
+            return type(NEO_FWD(h), NEO_FWD(tail));
         }
     };
 
@@ -345,13 +346,10 @@ requires(sizeof...(Tail) != 0) struct bufcat_impl<Head, Tail...> {
         /// Put `head` on the front:
         using type = buffers_seq_concat<Head, Ts...>;
 
-        constexpr static type prepend(Head&& h, tail_result_type& tail) {
+        constexpr static type prepend(Head&& h, tail_result_type&& tail) {
             /// Insert the result at the front using std::apply to explode the tail elements.
-            return std::apply(
-                [&](auto&&... args) {
-                    return type(std::forward<Head>(h), std::forward<Ts>(args)...);
-                },
-                std::move(tail).tuple());
+            return std::apply([&](auto&&... args) { return type(NEO_FWD(h), NEO_FWD(args)...); },
+                              std::move(tail).tuple());
         }
     };
 
@@ -361,9 +359,9 @@ requires(sizeof...(Tail) != 0) struct bufcat_impl<Head, Tail...> {
     /// The actual final concatenation:
     static constexpr auto concat(Head&& a, Tail&&... tail) noexcept {
         /// First, concatenate the tail:
-        auto tail_result = buffers_cat(NEO_FWD(tail)...);
+        decltype(auto) tail_result = buffers_cat(NEO_FWD(tail)...);
         /// No insert `Head` onto the front of that result:
-        return my_impl::prepend(NEO_FWD(a), tail_result);
+        return my_impl::prepend(NEO_FWD(a), NEO_FWD(tail_result));
     }
 };
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <neo/buffer_range_consumer.hpp>
-#include <neo/dynamic_buffer.hpp>
+#include <neo/buffer_sink.hpp>
+#include <neo/buffers_consumer.hpp>
 #include <neo/io_buffer.hpp>
 
 #include <neo/assert.hpp>
@@ -67,9 +67,9 @@ template <mutable_buffer_range Out,
           buffer_transformer<Args...> Tr>
 constexpr auto buffer_transform(Tr&& tr, Out&& out_, In&& in_, Args&&... args) {
     using result_type = buffer_transform_result_t<Tr, Args...>;
-    buffer_range_consumer out{out_};
-    buffer_range_consumer in{in_};
-    result_type           acc_res;
+    buffers_consumer out{out_};
+    buffers_consumer in{in_};
+    result_type      acc_res;
 
     while (true) {
         auto part_out = out.next_contiguous();
@@ -135,7 +135,7 @@ constexpr auto buffer_transform(Tr&& tr, Out&& out, In&& in_, Args&&... args) {
     static_assert(growth_size > 0);
 
     // The input consumer
-    buffer_range_consumer in{in_};
+    buffers_consumer in{in_};
     // The result accumulator
     result_type acc_res;
 
@@ -156,7 +156,7 @@ constexpr auto buffer_transform(Tr&& tr, Out&& out, In&& in_, Args&&... args) {
         // Prepare the next output area
         auto next_out_area = out.prepare(growth_size);
         // A consumer for that output area
-        buffer_range_consumer next_out{next_out_area};
+        buffers_consumer next_out{next_out_area};
         // Keep track of how much we actually transform on this loop step
         std::size_t n_written_this_step = 0;
 
@@ -223,17 +223,42 @@ constexpr auto buffer_transform(Tr&& tr, Out&& out, In&& in_, Args&&... args) {
     return acc_res;
 }
 
-/**
- * Apply a buffer transformation on the given input `in_`, writing output to the
- * `dyn_out` dynamic buffer. The `dyn_out` buffer will be extended. Prior
- * content in `dyn_out` will be untouched.
- */
-template <typename... Args, dynamic_buffer Out, buffer_range In, buffer_transformer<Args...> Tr>
-constexpr auto buffer_transform(Tr&& tr, Out&& dyn_out, In&& in, Args&&... args) {
-    dynamic_io_buffer_adaptor io{dyn_out};
-    auto                      ret = buffer_transform(tr, io, in, std::forward<Args>(args)...);
-    io.shrink_uncommitted();
-    return ret;
+template <typename... Args, typename Out, buffer_source In, buffer_transformer<Args...> Tr>
+constexpr auto buffer_transform(Tr&& tr, Out&& out, In&& in, Args&&... args)  //
+    requires requires {
+    buffer_transform(tr, out, in.next(1), args...);
+}
+{
+    using result_type               = buffer_transform_result_t<Tr, Args...>;
+    constexpr std::size_t read_size = 1024;
+
+    result_type res_acc;
+
+    while (true) {
+        auto       more_input = in.next(read_size);
+        const auto in_size    = buffer_size(more_input);
+        if (in_size == 0) {
+            // There is nothing more to read
+            break;
+        }
+        // Transform this input segment:
+        const auto part_res = buffer_transform(tr, out, more_input, args...);
+        // Accumulate:
+        res_acc += part_res;
+        // Discard the bytes that we fed down:
+        in.consume(part_res.bytes_read);
+        if (part_res.bytes_read != in_size) {
+            // The transformer did not consume the entire input buffer. This means
+            // that it needs more room in the output and cannot take any more. Stop.
+            break;
+        }
+        if (part_res.done) {
+            // The transformer has signalled us to stop
+            break;
+        }
+        // The entire input buffer was consumed. Go around again to read more data
+    }
+    return res_acc;
 }
 
 }  // namespace neo

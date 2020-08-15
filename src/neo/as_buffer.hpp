@@ -2,8 +2,8 @@
 
 #include <neo/byte_pointer.hpp>
 #include <neo/const_buffer.hpp>
-#include <neo/data_container_concepts.hpp>
 #include <neo/mutable_buffer.hpp>
+#include <neo/trivial_range.hpp>
 
 #include <neo/concepts.hpp>
 #include <neo/fwd.hpp>
@@ -29,15 +29,6 @@ concept has_member_as_buffer = requires(T t) {
 };
 
 template <typename T>
-concept has_both_as_buffer =
-    has_adl_as_buffer<T> &&
-    has_member_as_buffer<T>;
-
-template <typename T>
-concept has_any_as_buffer = has_adl_as_buffer<T> || has_member_as_buffer<T>;
-
-
-template <typename T>
 concept as_buffer_convertible_check =
        has_member_as_buffer<T>
     || has_adl_as_buffer<T>
@@ -48,7 +39,7 @@ concept as_buffer_convertible_check =
 
 }  // namespace detail
 
-inline namespace cpo {
+namespace cpo {
 
 inline constexpr struct as_buffer_fn {
     /**
@@ -57,20 +48,20 @@ inline constexpr struct as_buffer_fn {
      */
     template <detail::as_buffer_convertible_check T>
     [[nodiscard]] constexpr decltype(auto) operator()(T&& what) const noexcept {
+        // First, prefer member .as_buffer()
         if constexpr (detail::has_member_as_buffer<T>) {
-            // First, prefer member .as_buffer()
             return NEO_FWD(what).as_buffer();
-
-        } else if constexpr (detail::has_adl_as_buffer<T>) {
-            // Second, check ADL-found
+        }
+        // Second, check ADL-found
+        else if constexpr (detail::has_adl_as_buffer<T>) {
             return as_buffer(NEO_FWD(what));
-
-        } else if constexpr (std::is_constructible_v<mutable_buffer, T>) {
-            // Third, just check if it can convert to mutable_buffer
+        }
+        // Third, just check if it can convert to mutable_buffer
+        else if constexpr (std::is_constructible_v<mutable_buffer, T>) {
             return static_cast<mutable_buffer>(NEO_FWD(what));
-
-        } else {
-            // Finally, convert to const_buffer
+        }
+        // Finally, convert to const_buffer
+        else {
             static_assert(std::is_constructible_v<const_buffer, T>,
                           "You should never see this. This is a bug in neo-buffer.");
             return static_cast<const_buffer>(NEO_FWD(what));
@@ -91,28 +82,39 @@ inline constexpr struct as_buffer_fn {
     }
 
     /**
-     * Convert a std::byte pointer into a buffer
+     * Convert a std::byte pointer into a const_buffer
      */
     [[nodiscard]] constexpr const_buffer operator()(const std::byte* ptr,
                                                     std::size_t      size) const noexcept {
         return const_buffer(ptr, size);
     }
 
+    /**
+     * Convert a std::byte pointer to a mutable_buffer
+     */
     [[nodiscard]] constexpr mutable_buffer operator()(std::byte*  ptr,
                                                       std::size_t size) const noexcept {
         return mutable_buffer(ptr, size);
     }
 } as_buffer;
-
 }  // namespace cpo
 
+using namespace cpo;
+
+/**
+ * Check that a type can be converted to a single buffer using as_buffer
+ */
 template <typename T>
 concept as_buffer_convertible = requires(T&& val) {
     as_buffer(NEO_FWD(val));
 };
 
+/**
+ * Determine the type of buffer that will be returned by `as_buffer` if given an
+ * argument of the given type.
+ */
 template <as_buffer_convertible T>
-using as_buffer_t = decltype(as_buffer(ref_v<T>));
+using as_buffer_t = decltype(as_buffer(std::declval<T>()));
 
 /**
  * Create a buffer that views the representation of a buffer_safe object.

@@ -9,6 +9,9 @@
 
 using namespace std::string_view_literals;
 
+NEO_TEST_CONCEPT(neo::sentinel_for<neo::detail::single_buffer_iter_sentinel,
+                                   neo::detail::single_buffer_iter<neo::const_buffer>>);
+
 TEST_CASE("Default construct") {
     neo::const_buffer buf;
     CHECK(buf.size() == 0);
@@ -134,5 +137,19 @@ TEST_CASE("Single-buffer sequence") {
     CHECK(it == stop);
 }
 
-NEO_TEST_CONCEPT(neo::sentinel_for<neo::detail::single_buffer_iter_sentinel,
-                                   neo::detail::single_buffer_iter<neo::const_buffer>>);
+TEST_CASE("Buffer literal") {
+    {
+        using namespace neo::literals;
+        auto b = "foo"_buf;
+        static_assert(neo::same_as<decltype(b), neo::const_buffer>);
+        CHECK(b.size() == 3);
+        CHECK(std::string_view(b) == "foo");
+    }
+    {
+        using namespace neo::buffer_literals;
+        auto b = "bar"_buf;
+        static_assert(neo::same_as<decltype(b), neo::const_buffer>);
+        CHECK(b.size() == 3);
+        CHECK(std::string_view(b) == "bar");
+    }
+}

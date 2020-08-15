@@ -1,6 +1,9 @@
 #include <neo/mutable_buffer.hpp>
 
+#include <neo/buffer_range.hpp>
 #include <neo/const_buffer.hpp>
+
+#include <neo/test_concept.hpp>
 
 #include <catch2/catch.hpp>
 
@@ -18,6 +21,9 @@ static_assert(neo::constructible_from<neo::mutable_buffer, std::vector<int>&>);
 static_assert(!neo::constructible_from<neo::mutable_buffer, const std::vector<int>>);
 
 static_assert(!neo::constructible_from<neo::mutable_buffer, neo::const_buffer>);
+
+NEO_TEST_CONCEPT(neo::mutable_buffer_range<neo::mutable_buffer>);
+NEO_TEST_CONCEPT(neo::mutable_buffer_range<neo::mutable_buffer&>);
 
 TEST_CASE("Default construct") {
     neo::mutable_buffer buf;

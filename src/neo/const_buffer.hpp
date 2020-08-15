@@ -35,9 +35,9 @@ public:
     /**
      * Construct a buffer view from a data container.
      */
-    template <data_container C>
+    template <trivial_range C>
     explicit constexpr const_buffer(const C& c) noexcept
-        : buffer_base(byte_pointer(std::data(c)), data_container_byte_size(c)) {}
+        : buffer_base(byte_pointer(std::data(c)), trivial_range_byte_size(c)) {}
 
     template <const_buffer_constructible T>
     explicit constexpr operator T() const noexcept {
@@ -45,5 +45,13 @@ public:
                  size() / data_type_size_v<T>);
     }
 };
+
+inline namespace literals {
+inline namespace buffer_literals {
+constexpr const_buffer operator""_buf(const char* first, std::size_t count) noexcept {
+    return const_buffer(byte_pointer(first), count);
+}
+}  // namespace buffer_literals
+}  // namespace literals
 
 }  // namespace neo

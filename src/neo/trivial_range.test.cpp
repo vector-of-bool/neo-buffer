@@ -1,4 +1,4 @@
-#include <neo/data_container_concepts.hpp>
+#include <neo/trivial_range.hpp>
 
 #include <catch2/catch.hpp>
 

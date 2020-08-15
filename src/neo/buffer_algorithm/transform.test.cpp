@@ -1,7 +1,7 @@
 #include <neo/buffer_algorithm/transform.hpp>
 
-#include <neo/as_dynamic_buffer.hpp>
 #include <neo/buffer_algorithm/copy.hpp>
+#include <neo/io_buffer.hpp>
 
 #include <catch2/catch.hpp>
 
@@ -44,11 +44,10 @@ TEST_CASE("Compress into a dynamic buffer") {
     std::string buf;
 
     auto res = neo::buffer_transform(neo::buffer_copy_transformer(),
-                                     neo::as_dynamic_buffer(buf),
+                                     neo::dynamic_io_buffer(buf),
                                      neo::const_buffer(pasta));
+    buf.resize(res.bytes_written);
     CHECK(res.bytes_read == pasta.size());
-    CHECK(buf.size() > 0);
-    CHECK(res.bytes_written == buf.size());
     CHECK(buf == pasta);
 }
 
@@ -74,8 +73,9 @@ TEST_CASE("Compress multi-part input") {
     };
     std::string buf;
     auto        res
-        = neo::buffer_transform(neo::buffer_copy_transformer(), neo::as_dynamic_buffer(buf), bufs);
-    CHECK(res.bytes_written == buf.size());
+        = neo::buffer_transform(neo::buffer_copy_transformer(), neo::dynamic_io_buffer(buf), bufs);
+    buf.resize(res.bytes_written);
+    CHECK(res.bytes_written == neo::buffer_size(bufs));
     CHECK(buf == pasta);
     CHECK(buf.size() == neo::buffer_size(bufs));
 }
