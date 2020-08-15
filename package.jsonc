@@ -1,6 +1,6 @@
 {
     "name": "neo-buffer",
-    "version": "0.3.0-dev",
+    "version": "0.3.1-dev",
     "namespace": "neo",
     "test_driver": "Catch-Main",
     "depends": [
