@@ -92,7 +92,7 @@ public:
         const auto init_size           = size();
         const auto remaining_grow_size = max_size() - init_size;
         neo_assert(expects,
-                   n < remaining_grow_size,
+                   n <= remaining_grow_size,
                    "grow() would put dynamic_buffer beyond its maximum size",
                    n,
                    this->max_size(),
