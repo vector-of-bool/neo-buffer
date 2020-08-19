@@ -18,7 +18,7 @@ class dynamic_io_buffer {
     std::size_t _write_area_size = unref(_dyn_buf).size() - _read_area_size;
 
 public:
-    constexpr explicit dynamic_io_buffer() = default;
+    constexpr dynamic_io_buffer() = default;
 
     constexpr explicit dynamic_io_buffer(DynBuf&& db)
         : _dyn_buf(NEO_FWD(db)) {}
