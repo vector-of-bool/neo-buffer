@@ -24,4 +24,7 @@ struct proto_buffer_source {
     void               consume(std::size_t);
 };
 
+template <buffer_source T>
+constexpr std::size_t buffer_source_next_size_hint_v = 1024 * 4;
+
 }  // namespace neo

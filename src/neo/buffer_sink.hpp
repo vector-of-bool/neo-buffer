@@ -22,4 +22,7 @@ struct proto_buffer_sink {
     void                       commit(std::size_t);
 };
 
+template <buffer_sink T>
+constexpr std::size_t buffer_sink_prepare_size_hint_v = 1024 * 4;
+
 }  // namespace neo
