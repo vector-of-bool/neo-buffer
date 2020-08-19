@@ -32,7 +32,7 @@ constexpr T buffer_bit_cast(Buf&& buf) noexcept {
                "Attempted buffer_bit_cast from a too-small buffer to a too-large type",
                sizeof(T),
                buffer_size(buf));
-    T dest;
+    auto dest = T();
     buffer_copy(trivial_buffer(dest), buf, ll_buffer_copy_forward);
     return dest;
 }
