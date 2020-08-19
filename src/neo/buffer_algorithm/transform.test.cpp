@@ -3,7 +3,12 @@
 #include <neo/buffer_algorithm/copy.hpp>
 #include <neo/io_buffer.hpp>
 
+#include <neo/test_concept.hpp>
+
 #include <catch2/catch.hpp>
+
+NEO_TEST_CONCEPT(neo::buffer_transform_result<neo::proto_buffer_transform_result>);
+NEO_TEST_CONCEPT(neo::buffer_transformer<neo::proto_buffer_transformer>);
 
 TEST_CASE("Compress some data") {
     neo::buffer_copy_transformer c;

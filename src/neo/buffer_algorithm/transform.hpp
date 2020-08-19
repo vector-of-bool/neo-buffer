@@ -7,6 +7,7 @@
 #include <neo/assert.hpp>
 #include <neo/fwd.hpp>
 #include <neo/ref.hpp>
+#include <neo/returns.hpp>
 #include <neo/test_concept.hpp>
 
 #include <functional>
@@ -45,7 +46,18 @@ struct proto_buffer_transform_result {
     bool        done;
 };
 
-static_assert(buffer_transform_result<proto_buffer_transform_result>);
+struct simple_transform_result {
+    std::size_t bytes_written = 0;
+    std::size_t bytes_read    = 0;
+    bool        done          = false;
+
+    constexpr simple_transform_result& operator+=(simple_transform_result o) noexcept {
+        bytes_written += o.bytes_written;
+        bytes_read += o.bytes_read;
+        done = done || o.done;
+        return *this;
+    }
+};
 
 struct proto_buffer_transformer {
     proto_buffer_transformer()  = delete;
@@ -54,12 +66,61 @@ struct proto_buffer_transformer {
     proto_buffer_transform_result operator()(mutable_buffer mb, const_buffer cb);
 };
 
-static_assert(buffer_transformer<proto_buffer_transformer>);
+/**
+ * The base case of buffer_transform, transforms individual single buffers. It
+ * is guaranteed that either the entire input or the entire output is consumed,
+ * or the transformer declares that it has no more work to do. (This is guarded
+ * by an assertion)
+ */
+template <typename... Args, buffer_transformer<Args...> Tr>
+constexpr auto buffer_transform(Tr&& tr, mutable_buffer out, const_buffer in, Args&&... args) {
+    auto result = tr(out, in, args...);
+
+    // If the transformer declares that it is done, then we shouldn't check that
+    // it consumed entire buffers.
+    if (result.done) {
+        return result;
+    }
+
+    /**
+     * The transformer has not declared that it is done, but it *must* have
+     * consumed either the entire input or the entire output. If not, then
+     * the transformer is ill-formed. The next iteration around, we will
+     * call the transformer with the same tail of buffers that it left
+     * behind. If it couldn't finish the buffers this time around, then
+     * there is no reason to hope that it will make any progress on the next
+     * iteration. Halt!
+     *
+     * Note that this _does_ consider the case of empty input or output
+     * buffers, in which case we will break out.
+     */
+    neo_assert(expects,
+               (result.bytes_written == out.size() || result.bytes_read == in.size()),
+               "neo::buffer_transform() encoundered a malformed data transformer. "
+               "The transformer was unable to completely consume either of the buffers "
+               "provided to it. This indicates a bug in the data transformer and is not "
+               "the result of user error.",
+               result.bytes_written,
+               out.size(),
+               result.bytes_read,
+               in.size());
+
+    // We have a partial result, but that's okay.
+    return result;
+}
 
 /**
- * The base case transformation function. This transforms fixed-length buffer
- * sequences, no dynamic resizing required. Other buffer_transform overloads
- * are implemented in terms of multiple calls to this base case.
+ * Catch cast of mutable_buffer -> mutable_buffer, lower to
+ * const_buffer -> mutable_buffer.
+ */
+template <typename... Args, buffer_transformer<Args...> Tr>
+constexpr auto buffer_transform(Tr&& tr, mutable_buffer out, mutable_buffer in, Args&&... args)
+    NEO_RETURNS(buffer_transform(tr, out, const_buffer(in), args...));
+
+/**
+ * This overload transforms fixed-length buffer sequences, no dynamic resizing
+ * required. Other buffer_transform overloads may be implemented in terms of
+ * multiple calls to this case.
  */
 template <mutable_buffer_range Out,
           buffer_range         In,
@@ -72,9 +133,9 @@ constexpr auto buffer_transform(Tr&& tr, Out&& out_, In&& in_, Args&&... args) {
     result_type      acc_res;
 
     while (true) {
-        auto part_out = out.next_contiguous();
-        auto part_in  = in.next_contiguous();
-        auto part_res = tr(part_out, part_in, args...);
+        mutable_buffer part_out = out.next_contiguous();
+        const_buffer   part_in  = in.next_contiguous();
+        result_type    part_res = buffer_transform(tr, part_out, part_in, args...);
         out.consume(part_res.bytes_written);
         in.consume(part_res.bytes_read);
         acc_res += part_res;
@@ -89,30 +150,6 @@ constexpr auto buffer_transform(Tr&& tr, Out&& out_, In&& in_, Args&&... args) {
             break;
         }
 
-        /**
-         * The transformer has not declared that it is done, but it *must* have
-         * consumed either the entire input or the entire output. If not, then
-         * the transformer is ill-formed. The next iteration around, we will
-         * call the transformer with the same tail of buffers that it left
-         * behind. If it couldn't finish the buffers this time around, then
-         * there is no reason to hope that it will make any progress on the next
-         * iteration. Halt!
-         *
-         * Note that this _does_ consider the case of empty input or output
-         * buffers, in which case we will break out.
-         */
-        neo_assert(expects,
-                   (part_res.bytes_written == part_out.size()
-                    || part_res.bytes_read == part_in.size()),
-                   "neo::buffer_transform() encoundered a malformed data transformer. "
-                   "The transformer was unable to completely consume either of the buffers "
-                   "provided to it. This indicates a bug in the data transformer and is not "
-                   "the result of user error.",
-                   part_res.bytes_written,
-                   part_out.size(),
-                   part_res.bytes_read,
-                   part_in.size());
-
         if (part_res.bytes_written == 0 && part_res.bytes_read == 0) {
             // No data was written or read. The transformer cannot make any further progress
             break;
@@ -123,7 +160,11 @@ constexpr auto buffer_transform(Tr&& tr, Out&& out_, In&& in_, Args&&... args) {
 }
 
 /**
- * Apply a buffer transformation on the given input `in_`, writing output into the output buffer
+ * Case: Given a buffer range as input, and a buffer_sink as the output. This case
+ * will grow the sink as it needs to transform the entire input. Stops when:
+ *  - The input is gone,
+ *  - The sink fails to prepare room for more output,
+ *  - or the transformer declares that it is done.
  */
 template <typename... Args, buffer_sink Out, buffer_range In, buffer_transformer<Args...> Tr>
 constexpr auto buffer_transform(Tr&& tr, Out&& out, In&& in_, Args&&... args) {
@@ -223,6 +264,13 @@ constexpr auto buffer_transform(Tr&& tr, Out&& out, In&& in_, Args&&... args) {
     return acc_res;
 }
 
+/**
+ * Case: Given some valid output, and a buffer_source as the input. Repeatedly
+ * pulls data from the source and transforms it into the output. Stops when:
+ *  - The source fails to produce more data,
+ *  - or the lower-level transform does not consume an entire input buffer range,
+ *  - or the transformer declares that it is done.
+ */
 template <typename... Args, typename Out, buffer_source In, buffer_transformer<Args...> Tr>
 constexpr auto buffer_transform(Tr&& tr, Out&& out, In&& in, Args&&... args)  //
     requires requires {
