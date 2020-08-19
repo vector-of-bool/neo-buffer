@@ -47,7 +47,13 @@ requires(buffer_sink<T> || buffer_source<T>)  //
 
     T& io;
 
-    constexpr std::size_t size_hint() { return std::size_t(1024 * 4); }
+    constexpr std::size_t size_hint() {
+        if constexpr (buffer_sink<T>) {
+            return buffer_sink_prepare_size_hint_v<std::remove_cvref_t<T>>;
+        } else {
+            return buffer_source_next_size_hint_v<std::remove_cvref_t<T>>;
+        }
+    }
 
     constexpr auto prepare(std::size_t max1, std::size_t max2) noexcept {
         const auto dat_size = (std::min)(size_hint(), (std::min)(max1, max2));
