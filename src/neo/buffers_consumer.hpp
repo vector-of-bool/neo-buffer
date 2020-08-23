@@ -129,7 +129,7 @@ class buffers_vec_consumer : public buffers_consumer<BaseRange> {
     constexpr static std::size_t _small_size = 16;
 
 public:
-    using buffer_type = buffers_vec_consumer::buffers_consumer::buffer_type;
+    using buffer_type = typename buffers_vec_consumer::buffers_consumer::buffer_type;
     using buffers_vec_consumer::buffers_consumer::buffers_consumer;
 
     [[nodiscard]] constexpr auto next(std::size_t n_to_prepare) noexcept
