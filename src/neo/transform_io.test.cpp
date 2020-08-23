@@ -7,7 +7,7 @@
 
 namespace {
 
-class bitnot_transformer {
+struct bitnot_transformer {
     auto operator()(neo::mutable_buffer out, neo::const_buffer in) const noexcept {
         std::size_t count = 0;
         while (out && in) {
@@ -22,6 +22,7 @@ class bitnot_transformer {
 
 }  // namespace
 
+NEO_TEST_CONCEPT(neo::buffer_transform_result<neo::simple_transform_result>);
 NEO_TEST_CONCEPT(neo::buffer_transformer<bitnot_transformer>);
 
 NEO_TEST_CONCEPT(
