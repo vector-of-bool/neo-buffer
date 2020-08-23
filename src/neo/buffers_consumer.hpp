@@ -23,7 +23,7 @@ public:
     /// The type of buffer that will be yielded by this consumer.
     using buffer_type = buffer_range_value_t<BaseRange>;
 
-private:
+protected:
     [[no_unique_address]] wrap_if_reference_t<BaseRange> _range;
 
     [[no_unique_address]] inner_buffer_iterator _seq_it   = std::begin(unref(_range));

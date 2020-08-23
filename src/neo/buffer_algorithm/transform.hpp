@@ -7,7 +7,6 @@
 #include <neo/assert.hpp>
 #include <neo/fwd.hpp>
 #include <neo/ref.hpp>
-#include <neo/returns.hpp>
 #include <neo/test_concept.hpp>
 
 #include <functional>
@@ -117,8 +116,12 @@ constexpr auto buffer_transform(Tr&&           tr,
  * const_buffer -> mutable_buffer.
  */
 template <typename... Args, buffer_transformer<Args...> Tr>
-constexpr auto buffer_transform(Tr&& tr, mutable_buffer out, mutable_buffer in, Args&&... args)
-    NEO_RETURNS(buffer_transform(tr, out, const_buffer(in), args...));
+constexpr auto buffer_transform(Tr&&           tr,
+                                mutable_buffer out,
+                                mutable_buffer in,
+                                Args&&... args) noexcept(noexcept(tr(out, in, args...))) {
+    return buffer_transform(tr, out, const_buffer(in), args...);
+}
 
 template <buffer_output Out, buffer_input In, typename... Args, buffer_transformer<Args...> Tr>
 constexpr auto buffer_transform(Tr&& tr, Out&& out_, In&& in_, Args&&... args) noexcept(
