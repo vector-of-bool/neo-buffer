@@ -204,8 +204,8 @@ constexpr auto buffer_transform(Tr&& tr, Out&& out, In&& in_, Args&&... args) {
         // Inner logic: Sends data to the transformer
         auto do_transform_more = [&]() -> tr_state_t {
             // Get the next contiguous input or output buffers
-            mutable_buffer out_buf = next_out.next_contiguous();
-            const_buffer   in_buf  = in.next_contiguous();
+            const_buffer   in_buf  = in.next(1024 * 1024);
+            mutable_buffer out_buf = next_out.next(1024 * 1024);
             // We must have non-empty buffers:
             neo_assert(invariant,
                        !out_buf.empty() || !in_buf.empty(),

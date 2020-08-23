@@ -1,6 +1,7 @@
 #pragma once
 
 #include <neo/buffer_range.hpp>
+#include <neo/buffers_consumer.hpp>
 
 namespace neo {
 
@@ -24,5 +25,22 @@ struct proto_buffer_sink {
 
 template <buffer_sink T>
 constexpr std::size_t buffer_sink_prepare_size_hint_v = 1024 * 4;
+
+template <typename T>
+concept buffer_output = mutable_buffer_range<T> || buffer_sink<T>;
+
+template <buffer_sink S>
+constexpr S make_buffer_sink(S&& s) noexcept {
+    return NEO_FWD(s);
+}
+
+template <buffer_output Out>
+constexpr decltype(auto) make_buffer_sink(Out&& out) noexcept {
+    if constexpr (buffer_sink<Out>) {
+        return Out(NEO_FWD(out));
+    } else {
+        return buffers_consumer(NEO_FWD(out));
+    }
+}
 
 }  // namespace neo

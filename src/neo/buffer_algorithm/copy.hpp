@@ -14,68 +14,6 @@
 
 namespace neo {
 
-namespace detail {
-
-template <typename T>
-struct buffer_copy_shifter;
-
-template <typename T>
-struct buffer_copy_shifter<buffers_consumer<T>> {
-    buffers_consumer<T> cons;
-
-    constexpr auto prepare(std::size_t, std::size_t) noexcept { return cons.next_contiguous(); }
-    constexpr auto next(std::size_t, std::size_t) noexcept { return cons.next_contiguous(); }
-    constexpr void commit(std::size_t s) noexcept { consume(s); }
-    constexpr void consume(std::size_t s) noexcept {
-        NEO_ASSUME(s <= size_hint());
-        cons.consume(s);
-    }
-
-    constexpr std::size_t size_hint() noexcept { return cons.next_contiguous().size(); }
-    constexpr bool        should_stop() const noexcept { return cons.empty(); }
-};
-
-template <buffer_range T>
-struct buffer_copy_shifter<T> : buffer_copy_shifter<buffers_consumer<T&>> {
-    explicit buffer_copy_shifter(T& bufs)
-        : buffer_copy_shifter<buffers_consumer<T&>>{buffers_consumer{bufs}} {}
-};
-
-template <typename T>
-requires(buffer_sink<T> || buffer_source<T>)  //
-    struct buffer_copy_shifter<T> {
-
-    T& io;
-
-    constexpr std::size_t size_hint() {
-        if constexpr (buffer_sink<T>) {
-            return buffer_sink_prepare_size_hint_v<std::remove_cvref_t<T>>;
-        } else {
-            return buffer_source_next_size_hint_v<std::remove_cvref_t<T>>;
-        }
-    }
-
-    constexpr auto prepare(std::size_t max1, std::size_t max2) noexcept {
-        const auto dat_size = (std::min)(size_hint(), (std::min)(max1, max2));
-        return io.prepare(dat_size);
-    }
-
-    constexpr auto next(std::size_t max1, std::size_t max2) noexcept {
-        const auto dat_size = (std::min)(size_hint(), (std::min)(max1, max2));
-        return io.next(dat_size);
-    }
-
-    constexpr void consume(std::size_t s) noexcept { io.consume(s); }
-    constexpr void commit(std::size_t s) noexcept { io.commit(s); }
-
-    constexpr bool should_stop() const noexcept { return false; }
-};
-
-template <typename T>
-buffer_copy_shifter(T&) -> buffer_copy_shifter<T>;
-
-}  // namespace detail
-
 /**
  * Low-level buffer copier that copies from the beginning to the end.
  * `dest` and `src` must have the same size `s`!
@@ -162,22 +100,18 @@ buffer_copy(mutable_buffer dest, mutable_buffer src, std::size_t max_copy, Copy&
  * be copied. The operation is bounds-checked, and the number of bytes copied is
  * returned.
  */
-template <typename Dest, typename Source, ll_buffer_copy_fn Copy>
-    requires (
-        (buffer_range<Dest> || buffer_sink<Dest>) &&
-        (buffer_range<Source> || buffer_source<Source>)
-    )
+template <buffer_output Dest, buffer_input Source, ll_buffer_copy_fn Copy>
 constexpr std::size_t
 buffer_copy(Dest&& dest, Source&& src, std::size_t max_copy, Copy&& copy) noexcept {
     // clang-format on
     auto remaining = max_copy;
 
-    detail::buffer_copy_shifter out{dest};
-    detail::buffer_copy_shifter in{src};
+    auto&& out = make_buffer_sink(dest);
+    auto&& in  = make_buffer_source(src);
 
-    while (remaining != 0 && !in.should_stop() && !out.should_stop()) {
-        auto in_part  = in.next(remaining, out.size_hint());
-        auto out_part = out.prepare(remaining, in.size_hint());
+    while (remaining != 0) {
+        auto in_part  = in.next(remaining);
+        auto out_part = out.prepare(buffer_size(in_part));
         auto n_copied = buffer_copy(out_part, in_part, remaining, copy);
         if (n_copied == 0) {
             break;

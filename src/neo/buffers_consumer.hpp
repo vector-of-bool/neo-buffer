@@ -32,8 +32,6 @@ private:
     std::size_t _cur_elem_offset = 0;
     std::size_t _remaining;
 
-    constexpr static std::size_t _small_size = 16;
-
 public:
     constexpr buffers_consumer() = default;
 
@@ -48,38 +46,12 @@ public:
         return _seq_it == _seq_stop || _remaining == 0;
     }
 
-    [[nodiscard]] constexpr auto prepare(std::size_t n_to_prepare) const noexcept
+    [[nodiscard]] constexpr auto prepare(std::size_t) const noexcept
         requires(mutable_buffer_range<BaseRange>) {
-        return next(n_to_prepare);
+        return next(1);
     }
 
-    [[nodiscard]] constexpr auto next(std::size_t n_to_prepare) const noexcept {
-        // Build a small vector of buffers from the whole sequence
-        static_buffer_vector<buffer_type, _small_size> bufs;
-        // Keep track of how far into the first buffer we are skipping
-        auto elem_offset = _cur_elem_offset;
-        // Clamp to the max we are allowed to consume
-        n_to_prepare = (std::min)(n_to_prepare, _remaining);
-        for (auto it = _seq_it;
-             // Stop if we reach the end of the base sequence
-             it != _seq_stop &&
-             // Or we have prepared every byte
-             n_to_prepare != 0 &&
-             // Or there is no more room in the temp buffer array
-             bufs.size() < bufs.max_size();
-             ++it) {
-            // Store a buffer element. The first element may need to be offset into, and we may
-            // need to clamp it
-            auto buf = bufs.push_back(as_buffer(*it + elem_offset, n_to_prepare));
-            // Decrement the max size by the number byte in that buffer
-            n_to_prepare -= buf.size();
-            // After the first, never advance the buffer.
-            elem_offset = 0;
-        }
-        return bufs;
-    }
-
-    [[nodiscard]] constexpr buffer_type next_contiguous() const noexcept {
+    [[nodiscard]] constexpr auto next(std::size_t) const noexcept {
         if (_seq_it == _seq_stop) {
             return buffer_type();
         }
@@ -93,7 +65,7 @@ public:
                    "Attempted to consume more bytes than are available in a buffers_consumer",
                    size);
         while (_seq_it != _seq_stop && size != 0) {
-            auto buf = next_contiguous();
+            auto buf = next(1);
             if (size < buf.size()) {
                 // We're partially-consuming a buffer. Next time we iterate, we
                 // need to skip into that buffer.
@@ -143,8 +115,6 @@ public:
     constexpr void consume(std::size_t n) noexcept { _buf += n; }
     constexpr void commit(std::size_t n) noexcept requires(mutable_buffer_range<T>) { consume(n); }
 
-    [[nodiscard]] constexpr buffer_type next_contiguous() const noexcept { return _buf; }
-
     [[nodiscard]] constexpr bool empty() const noexcept { return _buf.empty(); }
 };
 
@@ -154,17 +124,51 @@ buffers_consumer(T &&) -> buffers_consumer<T>;
 template <typename T>
 buffers_consumer(T&&, std::size_t) -> buffers_consumer<T>;
 
-namespace detail {
+template <buffer_range BaseRange>
+class buffers_vec_consumer : public buffers_consumer<BaseRange> {
+    constexpr static std::size_t _small_size = 16;
+
+public:
+    using buffer_type = buffers_vec_consumer::buffers_consumer::buffer_type;
+    using buffers_vec_consumer::buffers_consumer::buffers_consumer;
+
+    [[nodiscard]] constexpr auto next(std::size_t n_to_prepare) noexcept
+        requires(!single_buffer<BaseRange>) {
+        // Build a small vector of buffers from the whole sequence
+        static_buffer_vector<buffer_type, _small_size> bufs;
+        // Keep track of how far into the first buffer we are skipping
+        auto elem_offset = this->_cur_elem_offset;
+        // Clamp to the max we are allowed to consume
+        n_to_prepare = (std::min)(n_to_prepare, this->_remaining);
+        for (auto it = this->_seq_it;
+             // Stop if we reach the end of the base sequence
+             it != this->_seq_stop &&
+             // Or we have prepared every byte
+             n_to_prepare != 0 &&
+             // Or there is no more room in the temp buffer array
+             bufs.size() < bufs.max_size();
+             ++it) {
+            // Store a buffer element. The first element may need to be offset into, and we may
+            // need to clamp it
+            auto buf = bufs.push_back(as_buffer(*it + elem_offset, n_to_prepare));
+            // Decrement the max size by the number byte in that buffer
+            n_to_prepare -= buf.size();
+            // After the first, never advance the buffer.
+            elem_offset = 0;
+        }
+        return bufs;
+    }
+
+    [[nodiscard]] constexpr auto prepare(std::size_t s) noexcept
+        requires(mutable_buffer_range<BaseRange>) {
+        return next(s);
+    }
+};
 
 template <typename T>
-struct is_buffer_range_consumer : std::false_type {};
-
-template <typename Bufs>
-struct is_buffer_range_consumer<buffers_consumer<Bufs>> : std::true_type {};
+buffers_vec_consumer(T &&) -> buffers_vec_consumer<T>;
 
 template <typename T>
-constexpr bool is_buffer_range_consumer_v = is_buffer_range_consumer<std::remove_cvref_t<T>>::value;
-
-}  // namespace detail
+buffers_vec_consumer(T&&, std::size_t) -> buffers_vec_consumer<T>;
 
 }  // namespace neo
