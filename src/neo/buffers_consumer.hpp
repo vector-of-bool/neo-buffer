@@ -61,7 +61,7 @@ public:
     constexpr void consume(std::size_t size) noexcept {
         const auto consume_size = size;
         neo_assert(expects,
-                   !empty(),
+                   !empty() || size == 0,
                    "Attempted to consume more bytes than are available in a buffers_consumer",
                    size);
         while (_seq_it != _seq_stop && size != 0) {
