@@ -18,8 +18,6 @@ TEST_CASE("Compress some data") {
     comp.resize(50);
     auto res = neo::buffer_transform(c, neo::mutable_buffer(comp), neo::const_buffer(text));
     CHECK(res.bytes_read == text.size());
-    // done = c.finish(neo::mutable_buffer(comp) + nwritten).done;
-    // CHECK(done);
     CHECK(text == comp.substr(0, text.size()));
 }
 
