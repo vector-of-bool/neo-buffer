@@ -64,27 +64,31 @@ struct be_int32_decoder {
     std::array<std::byte, 4> buf;
     std::size_t              mb_off = 0;
 
-    bool        has_value  = false;
-    bool        has_error  = false;
-    std::size_t bytes_read = 0;
+    struct result {
+        std::size_t  bytes_read;
+        bool         _has_val = false;
+        std::int32_t val      = -42;
 
-    std::int32_t result() const noexcept {
-        std::int32_t ret = 0;
-        ret |= std::int32_t(buf[0]) << 24;
-        ret |= std::int32_t(buf[1]) << 16;
-        ret |= std::int32_t(buf[2]) << 8;
-        ret |= std::int32_t(buf[3]) << 0;
-        return ret;
-    }
+        bool has_value() { return _has_val; }
+        bool has_error() { return false; }
+        auto value() const noexcept { return val; }
+    };
 
-    auto operator()(neo::const_buffer cb) {
-        if (mb_off == 4) {
-            *this = {};
-        }
-        bytes_read = neo::buffer_copy(neo::mutable_buffer(buf) + mb_off, cb);
+    result operator()(neo::const_buffer cb) {
+        auto bytes_read = neo::buffer_copy(neo::mutable_buffer(buf) + mb_off, cb);
         mb_off += bytes_read;
-        has_value = mb_off == 4;
-        return *this;
+
+        if (mb_off == 4) {
+            std::int32_t val = 0;
+            val |= std::int32_t(buf[0]) << 24;
+            val |= std::int32_t(buf[1]) << 16;
+            val |= std::int32_t(buf[2]) << 8;
+            val |= std::int32_t(buf[3]) << 0;
+            *this = {};
+            return {.bytes_read = bytes_read, ._has_val = true, .val = val};
+        } else {
+            return {.bytes_read = bytes_read};
+        }
     }
 };
 
@@ -95,16 +99,16 @@ TEST_CASE("Decode an integer") {
 
     be_int32_decoder dec;
     auto             res = neo::buffer_decode(dec, bytes);
-    CHECK(res.has_value);
-    CHECK(res.result() == 5);
+    CHECK(res.has_value());
+    CHECK(res.value() == 5);
 
     res = neo::buffer_decode(dec, bytes + 2);
-    CHECK_FALSE(res.has_value);
+    CHECK_FALSE(res.has_value());
     CHECK(res.bytes_read == 2);
     res = neo::buffer_decode(dec, bytes);
     CHECK(res.bytes_read == 2);
-    CHECK(res.has_value);
-    CHECK(res.result() == 0x00'05'00'00);
+    CHECK(res.has_value());
+    CHECK(res.value() == 0x00'05'00'00);
 }
 
 TEST_CASE("Decode into an output param") {
@@ -112,7 +116,7 @@ TEST_CASE("Decode into an output param") {
     auto         bytes = neo::const_buffer("\x00\x00\x00\x05");
 
     auto result = neo::buffer_decode(be_int32_decoder(), bytes, neo::into(ival));
-    CHECK(result.has_value);
+    CHECK(result.has_value());
     CHECK(ival == 0x05);
 }
 
@@ -120,16 +124,16 @@ TEST_CASE("Partial decode") {
     be_int32_decoder decode;
     const auto       bytes1 = "\x00\x00"_buf;
     auto             result = neo::buffer_decode(decode, bytes1);
-    CHECK_FALSE(result.has_value);
+    CHECK_FALSE(result.has_value());
     result = neo::buffer_decode(decode, "\x00"_buf);
-    CHECK_FALSE(result.has_value);
+    CHECK_FALSE(result.has_value());
     result = neo::buffer_decode(decode, "\x07"_buf);
-    CHECK(result.has_value);
-    CHECK(result.result() == 0x07);
+    CHECK(result.has_value());
+    CHECK(result.value() == 0x07);
 
     result = neo::buffer_decode(decode, "\x05\x12\x05\x00"_buf);
-    CHECK(result.has_value);
-    CHECK(result.result() == 0x05'12'05'00);
+    CHECK(result.has_value());
+    CHECK(result.value() == 0x05'12'05'00);
 }
 
 TEST_CASE("Decode into a vector") {

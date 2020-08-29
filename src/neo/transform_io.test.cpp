@@ -52,10 +52,14 @@ TEST_CASE("Create a simple sink") {
     CHECK(out.storage() == original);
 }
 
-TEST_CASE("Sink with a fixed dynbuf") {
-    neo::shifting_string_io_buffer out;
-    out.string().clear();
+TEST_CASE("Source with a fixed buffer") {
+    std::string            str = "I am a string";
+    neo::dynamic_io_buffer input{str};
 
-    neo::string_io_buffer strio;
-    strio.string().clear();
+    neo::buffer_transform_source bitnot_source{input, bitnot_transformer{}};
+
+    neo::string_io_buffer out;
+    neo::buffer_copy(out, bitnot_source);
+    CHECK(out.string().size() == 13);
+    CHECK(out.string()[0] == ~'I');
 }

@@ -23,14 +23,11 @@ struct proto_buffer_sink {
     void                       commit(std::size_t);
 };
 
-template <buffer_sink T>
-constexpr std::size_t buffer_sink_prepare_size_hint_v = 1024 * 4;
-
 template <typename T>
 concept buffer_output = mutable_buffer_range<T> || buffer_sink<T>;
 
 template <buffer_output Out>
-constexpr decltype(auto) make_buffer_sink(Out&& out) noexcept {
+constexpr decltype(auto) ensure_buffer_sink(Out&& out) noexcept {
     if constexpr (buffer_sink<Out>) {
         return Out(NEO_FWD(out));
     } else {

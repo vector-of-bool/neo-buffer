@@ -33,3 +33,9 @@ TEST_CASE("Create an I/O buffer adaptor that respects a restricted max_size()") 
 
     neo::dynamic_io_buffer io{dbuf, 0};
 }
+
+TEST_CASE("Grow a string with a WAY too large request") {
+    std::string            str;
+    neo::dynamic_io_buffer dbuf{str};
+    CHECK_NOTHROW(dbuf.prepare(std::numeric_limits<std::size_t>::max() - 92));
+}

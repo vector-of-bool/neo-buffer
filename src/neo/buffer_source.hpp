@@ -35,7 +35,7 @@ template <typename T>
 concept buffer_input = buffer_range<T> || buffer_source<T>;
 
 template <buffer_input B>
-constexpr decltype(auto) make_buffer_source(B&& b) noexcept {
+constexpr decltype(auto) ensure_buffer_source(B&& b) noexcept {
     if constexpr (buffer_source<B>) {
         return B(NEO_FWD(b));
     } else {

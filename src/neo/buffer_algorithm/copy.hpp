@@ -106,8 +106,8 @@ buffer_copy(Dest&& dest, Source&& src, std::size_t max_copy, Copy&& copy) noexce
     // clang-format on
     auto remaining = max_copy;
 
-    auto&& out = make_buffer_sink(dest);
-    auto&& in  = make_buffer_source(src);
+    auto&& out = ensure_buffer_sink(dest);
+    auto&& in  = ensure_buffer_source(src);
 
     while (remaining != 0) {
         auto in_part  = in.next(remaining);

@@ -19,7 +19,7 @@ public:
     using value_type     = as_buffer_t<iter_value_t<inner_iterator>>;
 
 private:
-    [[no_unique_address]] wrap_if_reference_t<Range> _range;
+    [[no_unique_address]] wrap_refs_t<Range> _range;
 
     enum { uses_sentinel = !same_as<inner_iterator, inner_sentinel> };
 
@@ -33,8 +33,7 @@ public:
     constexpr explicit buffer_range_adaptor(Range&& rng)
         : _range(NEO_FWD(rng)) {}
 
-    auto& range() noexcept { return unref(_range); }
-    auto& range() const noexcept { return unref(_range); }
+    NEO_DECL_UNREF_GETTER(range, _range);
 
     class iterator : public iterator_facade<iterator>,
                      public std::conditional_t<uses_sentinel, sentinel_base, nothing> {
@@ -79,7 +78,6 @@ public:
         }
     };
 
-public:
     constexpr iterator begin() noexcept { return iterator(std::begin(range())); }
     constexpr auto     end() noexcept {
         if constexpr (uses_sentinel) {

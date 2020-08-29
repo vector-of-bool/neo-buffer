@@ -19,7 +19,7 @@ public:
     using storage_type = std::remove_cvref_t<Storage>;
 
 private:
-    wrap_if_reference_t<Storage> _storage;
+    wrap_refs_t<Storage> _storage;
 
     std::size_t _beg_idx = 0;
     std::size_t _size    = unref(_storage).size();
@@ -34,8 +34,7 @@ public:
         : _storage(NEO_FWD(s))
         , _size(size) {}
 
-    constexpr auto& storage() noexcept { return unref(_storage); }
-    constexpr auto& storage() const noexcept { return unref(_storage); }
+    NEO_DECL_UNREF_GETTER(storage, _storage);
 
     constexpr auto max_size() const noexcept { return storage().max_size(); }
     constexpr auto size() const noexcept { return _size; }

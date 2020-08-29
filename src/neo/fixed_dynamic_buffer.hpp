@@ -13,15 +13,14 @@ public:
     using storage_type = std::remove_reference_t<Storage>;
 
 private:
-    wrap_if_reference_t<Storage> _storage;
+    wrap_refs_t<Storage> _storage;
 
 public:
     constexpr fixed_dynamic_buffer() = default;
     constexpr explicit fixed_dynamic_buffer(Storage&& c)
         : _storage(NEO_FWD(c)) {}
 
-    constexpr auto& storage() noexcept { return unref(_storage); }
-    constexpr auto& storage() const noexcept { return unref(_storage); }
+    NEO_DECL_UNREF_GETTER(storage, _storage);
 
     constexpr std::size_t size() const noexcept { return as_buffer(storage()).size(); }
     constexpr std::size_t max_size() const noexcept { return size(); }

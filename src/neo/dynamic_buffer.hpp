@@ -63,4 +63,19 @@ constexpr decltype(auto) dynbuf_safe_grow(Buf&& b, std::size_t want_grow) {
     return b.grow(min_grow);
 }
 
+template <dynamic_buffer Buf>
+constexpr void dynbuf_clear(Buf&& b) {
+    b.shrink(b.size());
+}
+
+template <dynamic_buffer Buf>
+constexpr void dynbuf_resize(Buf&& b, std::size_t new_size) {
+    const auto cur_size = b.size();
+    if (cur_size < new_size) {
+        b.grow(new_size - cur_size);
+    } else {
+        b.shrink(cur_size - new_size);
+    }
+}
+
 }  // namespace neo

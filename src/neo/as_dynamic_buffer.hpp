@@ -54,15 +54,14 @@ public:
     using container_type = std::remove_cvref_t<Container>;
 
 private:
-    wrap_if_reference_t<Container> _container;
+    wrap_refs_t<Container> _container;
 
 public:
     constexpr dynamic_buffer_byte_container_adaptor() = default;
     constexpr explicit dynamic_buffer_byte_container_adaptor(Container&& c)
         : _container(NEO_FWD(c)) {}
 
-    constexpr auto& container() noexcept { return unref(_container); }
-    constexpr auto& container() const noexcept { return unref(_container); }
+    NEO_DECL_UNREF_GETTER(container, _container);
 
     constexpr std::size_t size() const noexcept { return as_buffer(container()).size(); }
     constexpr std::size_t max_size() const noexcept {

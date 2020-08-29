@@ -125,15 +125,16 @@ constexpr auto buffer_transform(Tr&&           tr,
 
 template <buffer_output Out, buffer_input In, typename... Args, buffer_transformer<Args...> Tr>
 constexpr auto buffer_transform(Tr&& tr, Out&& out_, In&& in_, Args&&... args) noexcept(
-    noexcept(tr(mutable_buffer(), const_buffer(), args...))) {
+    noexcept(tr(mutable_buffer(), const_buffer(), args...)) && noexcept(
+        ensure_buffer_source(in_).next(1) && noexcept(ensure_buffer_sink(out_).prepare(1)))) {
     using result_type = buffer_transform_result_t<Tr>;
     // The growth size can vary based on the algorithm
     constexpr std::size_t growth_size
         = buffer_transform_dynamic_growth_hint_v<std::remove_cvref_t<Tr>>;
     static_assert(growth_size > 0);
 
-    auto&& in  = make_buffer_source(in_);
-    auto&& out = make_buffer_sink(out_);
+    auto&& in  = ensure_buffer_source(in_);
+    auto&& out = ensure_buffer_sink(out_);
 
     result_type result_acc;
 
