@@ -82,6 +82,10 @@ public:
     }
 
     constexpr void shrink_uncommitted() noexcept { dynbuf_resize(buffer(), available()); }
+    constexpr void clear() noexcept {
+        dynbuf_clear(buffer());
+        _read_area_size = 0;
+    }
 };
 
 template <typename T>
