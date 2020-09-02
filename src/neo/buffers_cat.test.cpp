@@ -29,8 +29,7 @@ void check_buffer_str(R&& r, std::string_view expect) {
 #define CHECK_BUFFER_STR(Buf, String)                                                              \
     do {                                                                                           \
         neo::string_dynbuf_io result;                                                              \
-                                                                                                   \
-        auto tr_res = neo::buffer_transform(neo::buffer_copy_transformer(), result, Buf);          \
+        neo::buffer_transform(neo::buffer_copy_transformer(), result, Buf);                        \
         CHECK(result.read_area_view() == String);                                                  \
     } while (0)
 
