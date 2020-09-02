@@ -5,6 +5,7 @@
 #include "./string_io.hpp"
 
 #include <neo/assert.hpp>
+#include <neo/concepts.hpp>
 #include <neo/ref.hpp>
 
 #include <ios>
@@ -24,6 +25,19 @@ class iostream_io {
     wrap_refs_t<Stream>  _stream;
     dynbuf_io<DynBuffer> _buffer;
 
+#if !NEO_CONCEPTS_IS_CONCEPTS_TS
+    static constexpr bool is_istream = requires(Stream s, mutable_buffer mb) {
+        buffer_ios_read(s, mb);
+    };
+    static constexpr bool is_ostream = requires(Stream s, const_buffer cb) {
+        buffer_ios_write(s, cb);
+    };
+#else
+    // Workaround for GCC 9: Please remove me after GCC 9 support
+    static constexpr bool is_istream = derived_from<std::remove_cvref_t<Stream>, std::istream>;
+    static constexpr bool is_ostream = derived_from<std::remove_cvref_t<Stream>, std::ostream>;
+#endif
+
 public:
     iostream_io() = default;
 
@@ -39,13 +53,11 @@ public:
 
     void clear_buffer() noexcept { buffer().clear(); }
 
-    decltype(auto) prepare(std::size_t prep_size) noexcept requires requires {
-        buffer_ios_write(stream(), const_buffer());
+    decltype(auto) prepare(std::size_t prep_size) noexcept requires is_ostream {
+        return buffer().prepare(prep_size);
     }
-    { return buffer().prepare(prep_size); }
 
-    void commit(std::size_t n) requires requires { prepare(n); }
-    {
+    void commit(std::size_t n) requires is_ostream {
         auto& buf = buffer();
         buf.commit(n);
         auto dat  = buf.next(buf.available());
@@ -55,10 +67,7 @@ public:
         buf.consume(n_written);
     }
 
-    decltype(auto) next(std::size_t want_size) requires requires {
-        buffer_ios_read(stream(), mutable_buffer());
-    }
-    {
+    decltype(auto) next(std::size_t want_size) requires is_istream {
         // Easy case: We already have enough bytes that we can just return that
         // to the caller:
         auto& buf = buffer();
@@ -83,8 +92,7 @@ public:
         return buf.next(buf.available());
     }
 
-    void consume(std::size_t s) noexcept requires requires { next(s); }
-    {
+    void consume(std::size_t s) noexcept requires is_istream {
         neo_assert(expects,
                    s <= buffer().available(),
                    "Attempted to consume more bytes from an istream_source than have been read",
