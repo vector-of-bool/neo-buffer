@@ -38,7 +38,7 @@ public:
 
     constexpr std::size_t available() const noexcept { return _read_area_size; }
 
-    constexpr decltype(auto) next(std::size_t size) {
+    constexpr decltype(auto) next(std::size_t size) const {
         auto read_size = (std::min)(size, _read_area_size);
         return buffer().data(0, read_size);
     }
