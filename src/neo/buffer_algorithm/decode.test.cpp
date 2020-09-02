@@ -65,9 +65,9 @@ struct be_int32_decoder {
     std::size_t              mb_off = 0;
 
     struct result {
-        std::size_t  bytes_read;
-        bool         _has_val = false;
-        std::int32_t val      = -42;
+        std::size_t  bytes_read = 0;
+        bool         _has_val   = false;
+        std::int32_t val        = -42;
 
         bool has_value() { return _has_val; }
         bool has_error() { return false; }

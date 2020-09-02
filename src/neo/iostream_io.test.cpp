@@ -9,6 +9,8 @@
 #include <sstream>
 
 NEO_TEST_CONCEPT(neo::buffer_sink<neo::iostream_io<std::stringstream>>);
+NEO_TEST_CONCEPT(neo::buffer_sink<neo::iostream_io<std::ostream>>);
+NEO_TEST_CONCEPT(neo::buffer_source<neo::iostream_io<std::istream>>);
 
 TEST_CASE("iostream IO") {
     std::stringstream strm;
