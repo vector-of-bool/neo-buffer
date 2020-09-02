@@ -48,8 +48,7 @@ TEST_CASE("Create a simple sink") {
     // Copy the string back
     out = {};
     neo::buffer_copy(bitnot_sink, neo::as_buffer(inverted_str));
-    out.shrink_uncommitted();
-    CHECK(out.storage() == original);
+    CHECK(out.read_area_view() == original);
 }
 
 TEST_CASE("Source with a fixed buffer") {
