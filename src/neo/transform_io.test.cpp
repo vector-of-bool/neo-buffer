@@ -30,7 +30,7 @@ NEO_TEST_CONCEPT(
 
 TEST_CASE("Create a simple sink") {
     // Create a destination
-    neo::string_io_buffer out;
+    neo::string_dynbuf_io out;
     // A sink that transforms by passing data through a bitnot_transformer
     neo::buffer_transform_sink bitnot_sink{out, bitnot_transformer()};
     // The string we are testing:
@@ -52,13 +52,25 @@ TEST_CASE("Create a simple sink") {
 }
 
 TEST_CASE("Source with a fixed buffer") {
-    std::string            str = "I am a string";
-    neo::dynamic_io_buffer input{str};
+    std::string    str = "I am a string";
+    neo::dynbuf_io input{str};
 
     neo::buffer_transform_source bitnot_source{input, bitnot_transformer{}};
 
-    neo::string_io_buffer out;
+    neo::string_dynbuf_io out;
     neo::buffer_copy(out, bitnot_source);
     CHECK(out.string().size() == 13);
     CHECK(out.string()[0] == ~'I');
+    CHECK(out.string()[1] == ~' ');
+    CHECK(out.string()[2] == ~'a');
+    CHECK(out.string()[3] == ~'m');
+    CHECK(out.string()[4] == ~' ');
+    CHECK(out.string()[5] == ~'a');
+    CHECK(out.string()[6] == ~' ');
+    CHECK(out.string()[7] == ~'s');
+    CHECK(out.string()[8] == ~'t');
+    CHECK(out.string()[9] == ~'r');
+    CHECK(out.string()[10] == ~'i');
+    CHECK(out.string()[11] == ~'n');
+    CHECK(out.string()[12] == ~'g');
 }

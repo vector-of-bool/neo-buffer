@@ -1,7 +1,7 @@
 #include <neo/buffer_algorithm/transform.hpp>
 
 #include <neo/buffer_algorithm/copy.hpp>
-#include <neo/io_buffer.hpp>
+#include <neo/string_io.hpp>
 
 #include <neo/test_concept.hpp>
 
@@ -10,7 +10,7 @@
 NEO_TEST_CONCEPT(neo::buffer_transform_result<neo::proto_buffer_transform_result>);
 NEO_TEST_CONCEPT(neo::buffer_transformer<neo::proto_buffer_transformer>);
 
-TEST_CASE("Compress some data") {
+TEST_CASE("Copy some data") {
     neo::buffer_copy_transformer c;
 
     std::string text = "Hello, people!";
@@ -21,7 +21,7 @@ TEST_CASE("Compress some data") {
     CHECK(text == comp.substr(0, text.size()));
 }
 
-TEST_CASE("Compress with not enough output room") {
+TEST_CASE("Copy with not enough output room") {
     neo::buffer_copy_transformer c;
 
     std::string text = "Hello, people!";
@@ -43,18 +43,16 @@ std::string pasta
       "taught his apprentice everything he knew, then his apprentice killed him in his sleep. "
       "Ironic. He could save others from death, but not himself.";
 
-TEST_CASE("Compress into a dynamic buffer") {
-    std::string buf;
+TEST_CASE("Copy into a dynamic buffer") {
 
-    auto res = neo::buffer_transform(neo::buffer_copy_transformer(),
-                                     neo::dynamic_io_buffer(buf),
-                                     neo::const_buffer(pasta));
-    buf.resize(res.bytes_written);
-    CHECK(res.bytes_read == pasta.size());
-    CHECK(buf == pasta);
+    neo::string_dynbuf_io out;
+
+    auto res = neo::buffer_transform(neo::buffer_copy_transformer(), out, neo::const_buffer(pasta));
+    CHECK(res.bytes_read == out.available());
+    CHECK(out.read_area_view() == pasta);
 }
 
-TEST_CASE("Compress multi-part input") {
+TEST_CASE("Copy multi-part input") {
     auto bufs = {
         neo::const_buffer(
             "Did you ever hear the tragedy of Darth Plagueis The Wise? I thought not. It’s not a "),
@@ -74,11 +72,9 @@ TEST_CASE("Compress multi-part input") {
                           "him in his sleep. "),
         neo::const_buffer("Ironic. He could save others from death, but not himself."),
     };
-    std::string buf;
-    auto        res
-        = neo::buffer_transform(neo::buffer_copy_transformer(), neo::dynamic_io_buffer(buf), bufs);
-    buf.resize(res.bytes_written);
-    CHECK(res.bytes_written == neo::buffer_size(bufs));
-    CHECK(buf == pasta);
-    CHECK(buf.size() == neo::buffer_size(bufs));
+    neo::string_dynbuf_io out;
+    auto                  res = neo::buffer_transform(neo::buffer_copy_transformer(), out, bufs);
+    CHECK(res.bytes_written == out.available());
+    CHECK(out.available() == neo::buffer_size(bufs));
+    CHECK(out.read_area_view() == pasta);
 }

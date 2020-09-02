@@ -3,8 +3,8 @@
 
 #include <neo/as_dynamic_buffer.hpp>
 #include <neo/buffers_cat.hpp>
+#include <neo/dynbuf_io.hpp>
 #include <neo/fixed_dynamic_buffer.hpp>
-#include <neo/io_buffer.hpp>
 #include <neo/shifting_dynamic_buffer.hpp>
 
 #include <catch2/catch.hpp>
@@ -64,7 +64,7 @@ TEST_CASE("Copy dynamic sources and sinks") {
 
     std::string str;
 
-    auto n_copied = neo::buffer_copy(neo::dynamic_io_buffer(str), in);
+    auto n_copied = neo::buffer_copy(neo::dynbuf_io(str), in);
     CHECK(n_copied == str.size());
     CHECK(str == "I am a string");
 }
@@ -111,7 +111,7 @@ TEST_CASE("Copy buffer_range -> buffer_range") {
 TEST_CASE("Copy buffer -> buffer_sink") {
     std::string str;
     auto        buf = "Hello, world!"_buf;
-    auto        n   = buffer_copy(neo::dynamic_io_buffer(str), buf);
+    auto        n   = buffer_copy(neo::dynbuf_io(str), buf);
     CHECK(n == buf.size());
     CHECK(str.size() == buf.size());
     CHECK(str == "Hello, world!");
@@ -121,7 +121,7 @@ TEST_CASE("Copy buffer_source -> buffer") {
     std::string str = "Some string";
     std::string dest;
     dest.resize(5);
-    auto n = buffer_copy(neo::as_buffer(dest), neo::dynamic_io_buffer(str));
+    auto n = buffer_copy(neo::as_buffer(dest), neo::dynbuf_io(str));
     CHECK(n == 5);
     CHECK(dest == "Some ");
 }
@@ -130,9 +130,9 @@ TEST_CASE("Copy buffer_source -> buffer_sink") {
     std::string str = "I am a string";
     std::string dest;
 
-    auto n = buffer_copy(neo::dynamic_io_buffer(dest),
-                         neo::dynamic_io_buffer(
-                             neo::shifting_dynamic_buffer(neo::fixed_dynamic_buffer(str))));
+    auto n
+        = buffer_copy(neo::dynbuf_io(dest),
+                      neo::dynbuf_io(neo::shifting_dynamic_buffer(neo::fixed_dynamic_buffer(str))));
     CHECK(n == 13);
     CHECK(dest.substr(0, 13) == str);
 }

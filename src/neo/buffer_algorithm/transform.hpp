@@ -1,8 +1,8 @@
 #pragma once
 
 #include <neo/buffer_sink.hpp>
+#include <neo/buffer_source.hpp>
 #include <neo/buffers_consumer.hpp>
-#include <neo/io_buffer.hpp>
 
 #include <neo/assert.hpp>
 #include <neo/fwd.hpp>

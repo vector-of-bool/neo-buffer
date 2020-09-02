@@ -1,13 +1,13 @@
 #pragma once
 
-#include "./io_buffer.hpp"
+#include "./dynbuf_io.hpp"
 #include "./shifting_dynamic_buffer.hpp"
 
 #include <string>
 
 namespace neo {
 
-struct string_io_buffer : dynamic_io_buffer<std::string> {
+struct string_dynbuf_io : dynbuf_io<std::string> {
     decltype(auto) string() & noexcept { return storage(); }
     decltype(auto) string() const& noexcept { return storage(); }
     decltype(auto) string() && noexcept { return std::move(*this).storage(); }
@@ -19,7 +19,7 @@ struct string_io_buffer : dynamic_io_buffer<std::string> {
 
 struct shifting_string_buffer : shifting_dynamic_buffer<std::string> {};
 
-struct shifting_string_io_buffer : dynamic_io_buffer<shifting_string_buffer> {
+struct shifting_string_dynbuf_io : dynbuf_io<shifting_string_buffer> {
     decltype(auto) string() & noexcept { return storage().storage(); }
     decltype(auto) string() const& noexcept { return storage().storage(); }
     decltype(auto) string() && noexcept { return std::move(*this).storage().storage(); }

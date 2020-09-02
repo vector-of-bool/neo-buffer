@@ -11,7 +11,7 @@
 namespace neo {
 
 template <as_dynamic_buffer_convertible DynBuf>
-class dynamic_io_buffer {
+class dynbuf_io {
     [[no_unique_address]] wrap_refs_t<DynBuf> _dyn_buf;
 
     std::size_t _read_area_size = as_dynamic_buffer(unref(_dyn_buf)).size();
@@ -22,12 +22,12 @@ class dynamic_io_buffer {
     }
 
 public:
-    constexpr dynamic_io_buffer() = default;
+    constexpr dynbuf_io() = default;
 
-    constexpr explicit dynamic_io_buffer(DynBuf&& db)
+    constexpr explicit dynbuf_io(DynBuf&& db)
         : _dyn_buf(NEO_FWD(db)) {}
 
-    constexpr dynamic_io_buffer(DynBuf&& db, std::size_t read_area_size)
+    constexpr dynbuf_io(DynBuf&& db, std::size_t read_area_size)
         : _dyn_buf(NEO_FWD(db))
         , _read_area_size(read_area_size) {}
 
@@ -85,9 +85,9 @@ public:
 };
 
 template <typename T>
-dynamic_io_buffer(T &&) -> dynamic_io_buffer<T>;
+dynbuf_io(T &&) -> dynbuf_io<T>;
 
 template <typename T>
-dynamic_io_buffer(T&&, std::size_t) -> dynamic_io_buffer<T>;
+dynbuf_io(T&&, std::size_t) -> dynbuf_io<T>;
 
 }  // namespace neo

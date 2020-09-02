@@ -3,7 +3,7 @@
 #include <catch2/catch.hpp>
 
 TEST_CASE("String IO") {
-    neo::string_io_buffer strbuf;
+    neo::string_dynbuf_io strbuf;
     CHECK(strbuf.string().empty());
     neo::buffer_copy(strbuf, neo::const_buffer("Hello, string!"));
     CHECK(strbuf.available() == 14);
@@ -11,7 +11,7 @@ TEST_CASE("String IO") {
 }
 
 TEST_CASE("Shifting string IO") {
-    neo::shifting_string_io_buffer strbuf;
+    neo::shifting_string_dynbuf_io strbuf;
     CHECK(strbuf.string().empty());
     neo::buffer_copy(strbuf, neo::const_buffer("Hello, string!"));
     CHECK(strbuf.available() == 14);
