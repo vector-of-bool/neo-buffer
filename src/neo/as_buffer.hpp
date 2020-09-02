@@ -1,5 +1,6 @@
 #pragma once
 
+#include <neo/buffer_range.hpp>
 #include <neo/byte_pointer.hpp>
 #include <neo/const_buffer.hpp>
 #include <neo/mutable_buffer.hpp>
@@ -122,6 +123,18 @@ using as_buffer_t = decltype(as_buffer(std::declval<T>()));
 template <buffer_safe_cvr T>
 constexpr auto trivial_buffer(T&& what) noexcept {
     return as_buffer(byte_pointer(std::addressof(what)), sizeof what);
+}
+
+template <typename T>
+concept buffer_range_convertible = buffer_range<T> || as_buffer_convertible<T>;
+
+template <buffer_range_convertible T>
+constexpr decltype(auto) ensure_buffer_range(T&& t) noexcept {
+    if constexpr (buffer_range<T>) {
+        return T(NEO_FWD(t));
+    } else {
+        return as_buffer(NEO_FWD(t));
+    }
 }
 
 }  // namespace neo

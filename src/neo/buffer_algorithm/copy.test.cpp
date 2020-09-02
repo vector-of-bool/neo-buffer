@@ -2,6 +2,7 @@
 #include <neo/buffer_algorithm/copy.hpp>
 
 #include <neo/as_dynamic_buffer.hpp>
+#include <neo/buffers_cat.hpp>
 #include <neo/fixed_dynamic_buffer.hpp>
 #include <neo/io_buffer.hpp>
 #include <neo/shifting_dynamic_buffer.hpp>
@@ -134,4 +135,12 @@ TEST_CASE("Copy buffer_source -> buffer_sink") {
                              neo::shifting_dynamic_buffer(neo::fixed_dynamic_buffer(str))));
     CHECK(n == 13);
     CHECK(dest.substr(0, 13) == str);
+}
+
+TEST_CASE("String concat with buffers") {
+    auto        bufs = neo::buffers_cat("Hello"_buf, ", "_buf, neo::as_buffer("world"), "!"_buf);
+    std::string s;
+    s.resize(neo::buffer_size(bufs));
+    neo::buffer_copy(neo::as_buffer(s), bufs);
+    CHECK(s == "Hello, world!");
 }
