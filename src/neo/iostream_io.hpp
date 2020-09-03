@@ -12,6 +12,20 @@
 
 namespace neo {
 
+namespace detail {
+
+template <typename S>
+concept can_buf_ios_read = requires(S s, mutable_buffer mb) {
+    buffer_ios_read(s, mb);
+};
+
+template <typename S>
+concept can_buf_ios_write = requires(S s, const_buffer cb) {
+    buffer_ios_write(s, cb);
+};
+
+}  // namespace detail
+
 /**
  * Adapt a stdlib istream/ostream to be used as a buffer_source/buffer_sink.
  *
@@ -25,18 +39,8 @@ class iostream_io {
     wrap_refs_t<Stream>  _stream;
     dynbuf_io<DynBuffer> _buffer;
 
-#if !NEO_CONCEPTS_IS_CONCEPTS_TS
-    static constexpr bool is_istream = requires(Stream s, mutable_buffer mb) {
-        buffer_ios_read(s, mb);
-    };
-    static constexpr bool is_ostream = requires(Stream s, const_buffer cb) {
-        buffer_ios_write(s, cb);
-    };
-#else
-    // Workaround for GCC 9: Please remove me after GCC 9 support
-    static constexpr bool is_istream = derived_from<std::remove_cvref_t<Stream>, std::istream>;
-    static constexpr bool is_ostream = derived_from<std::remove_cvref_t<Stream>, std::ostream>;
-#endif
+    static constexpr bool is_istream = detail::can_buf_ios_read<Stream>;
+    static constexpr bool is_ostream = detail::can_buf_ios_write<Stream>;
 
 public:
     iostream_io() = default;
