@@ -3,6 +3,7 @@
 #include <neo/as_dynamic_buffer.hpp>
 #include <neo/buffer_algorithm/copy.hpp>
 #include <neo/buffer_algorithm/transform.hpp>
+#include <neo/dynbuf_io.hpp>
 
 #include <catch2/catch.hpp>
 
@@ -17,7 +18,7 @@ TEST_CASE("Create a simple adapter") {
     neo::buffer_range_adaptor adapted_strings{strings};
 
     auto size = neo::buffer_transform(neo::buffer_copy_transformer{},
-                                      neo::dynamic_io_buffer(full_str),
+                                      neo::dynbuf_io(full_str),
                                       adapted_strings)
                     .bytes_written;
     full_str.resize(size);

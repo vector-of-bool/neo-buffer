@@ -1,6 +1,10 @@
 #pragma once
 
 #include <neo/buffer_range.hpp>
+#include <neo/buffers_consumer.hpp>
+
+#include <neo/fwd.hpp>
+#include <neo/returns.hpp>
 
 namespace neo {
 
@@ -23,5 +27,20 @@ struct proto_buffer_source {
     proto_buffer_range next(std::size_t);
     void               consume(std::size_t);
 };
+
+template <buffer_source T>
+constexpr std::size_t buffer_source_next_size_hint_v = 1024 * 4;
+
+template <typename T>
+concept buffer_input = buffer_range<T> || buffer_source<T>;
+
+template <buffer_input B>
+constexpr decltype(auto) ensure_buffer_source(B&& b) noexcept {
+    if constexpr (buffer_source<B>) {
+        return B(NEO_FWD(b));
+    } else {
+        return buffers_consumer(NEO_FWD(b));
+    }
+}
 
 }  // namespace neo

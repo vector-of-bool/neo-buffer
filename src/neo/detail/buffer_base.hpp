@@ -159,6 +159,8 @@ public:
         return detail::single_buffer_iter(static_cast<const ThisType&>(*this));
     }
     constexpr auto end() const noexcept { return detail::single_buffer_iter_sentinel(); }
+
+    constexpr explicit operator bool() const noexcept { return !empty(); }
 };
 
 }  // namespace neo::detail

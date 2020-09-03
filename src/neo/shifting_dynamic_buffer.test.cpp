@@ -79,3 +79,39 @@ TEST_CASE("Create a shifting dynbuf") {
     CHECK(shifty.capacity() == 2048);
     // We've garbled the string further
 }
+
+TEST_CASE("Shrinking to zero resets the offset") {
+    std::string                  str;
+    neo::shifting_dynamic_buffer dbuf{neo::as_dynamic_buffer(str)};
+    str.resize(256);
+    CHECK(dbuf.capacity() == 256);
+    dbuf.grow(250);
+    CHECK(dbuf.capacity() == 256);
+    dbuf.consume(245);
+    CHECK(dbuf.capacity() == 11);
+    CHECK(dbuf.size() == 5);
+    dbuf.shrink(4);
+    CHECK(dbuf.capacity() == 11);
+    CHECK(dbuf.size() == 1);
+    // When we clear a shifting buffer, we reset the offset since there's nothing to copy
+    dbuf.shrink(1);
+    CHECK(dbuf.capacity() == 256);
+}
+
+TEST_CASE("With bare dynamic_buffer_convertible") {
+    std::string                  str;
+    neo::shifting_dynamic_buffer dbuf{str};
+    str.resize(256);
+    CHECK(dbuf.capacity() == 256);
+    dbuf.grow(250);
+    CHECK(dbuf.capacity() == 256);
+    dbuf.consume(245);
+    CHECK(dbuf.capacity() == 11);
+    CHECK(dbuf.size() == 5);
+    dbuf.shrink(4);
+    CHECK(dbuf.capacity() == 11);
+    CHECK(dbuf.size() == 1);
+    // When we clear a shifting buffer, we reset the offset since there's nothing to copy
+    dbuf.shrink(1);
+    CHECK(dbuf.capacity() == 256);
+}

@@ -13,6 +13,7 @@ namespace neo {
 namespace detail {
 
 // clang-format off
+
 template <typename T>
 concept has_member_as_dynbuf = requires(T t) {
     { NEO_FWD(t).as_dynamic_buffer() } -> dynamic_buffer;
@@ -27,7 +28,7 @@ template <typename T>
 concept simple_resizable_byte_container =
     as_buffer_convertible<T> &&
     (sizeof(data_type_t<T>) == 1) &&
-    requires(const std::remove_reference_t<T> c_cont, std::remove_const_t<T> cont, std::size_t size) {
+    requires(const std::remove_cvref_t<T> c_cont, std::remove_cvref_t<T> cont, std::size_t size) {
         { c_cont.size() } noexcept -> same_as<std::size_t>;
         { cont.resize(size) };
     };
@@ -37,7 +38,7 @@ concept as_dynamic_buffer_convertible_check =
        has_member_as_dynbuf<T>
     || has_adl_as_dynbuf<T>
     || simple_resizable_byte_container<T>
-    || dynamic_buffer<T>;
+    || dynamic_buffer<std::remove_cvref_t<T>>;
 
 template <typename C>
 concept container_has_capacity = requires(const C c) { c.capacity(); };
@@ -54,15 +55,14 @@ public:
     using container_type = std::remove_cvref_t<Container>;
 
 private:
-    wrap_if_reference_t<Container> _container;
+    wrap_refs_t<Container> _container;
 
 public:
     constexpr dynamic_buffer_byte_container_adaptor() = default;
     constexpr explicit dynamic_buffer_byte_container_adaptor(Container&& c)
         : _container(NEO_FWD(c)) {}
 
-    constexpr auto& container() noexcept { return unref(_container); }
-    constexpr auto& container() const noexcept { return unref(_container); }
+    NEO_DECL_UNREF_GETTER(container, _container);
 
     constexpr std::size_t size() const noexcept { return as_buffer(container()).size(); }
     constexpr std::size_t max_size() const noexcept {
@@ -92,7 +92,7 @@ public:
         const auto init_size           = size();
         const auto remaining_grow_size = max_size() - init_size;
         neo_assert(expects,
-                   n < remaining_grow_size,
+                   n <= remaining_grow_size,
                    "grow() would put dynamic_buffer beyond its maximum size",
                    n,
                    this->max_size(),
@@ -147,7 +147,7 @@ inline constexpr struct as_dynamic_buffer_fn {
         } else if constexpr (detail::simple_resizable_byte_container<T>) {
             return dynamic_buffer_byte_container_adaptor(NEO_FWD(what));
         } else {
-            static_assert(dynamic_buffer<T>);
+            static_assert(dynamic_buffer<std::remove_cvref_t<T>>);
             return NEO_FWD(what);
         }
     }
