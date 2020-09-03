@@ -9,6 +9,7 @@
 #include <vector>
 
 using namespace neo::literals;
+using namespace std::literals;
 
 namespace {
 
@@ -95,17 +96,17 @@ struct be_int32_decoder {
 }  // namespace
 
 TEST_CASE("Decode an integer") {
-    auto bytes = neo::const_buffer("\x00\x00\x00\x05");
+    auto bytes = "\x00\x00\x00\x05"s;
 
     be_int32_decoder dec;
-    auto             res = neo::buffer_decode(dec, bytes);
+    auto             res = neo::buffer_decode(dec, neo::buffers_consumer(neo::as_buffer(bytes)));
     CHECK(res.has_value());
     CHECK(res.value() == 5);
 
-    res = neo::buffer_decode(dec, bytes + 2);
+    res = neo::buffer_decode(dec, neo::as_buffer(bytes) + 2);
     CHECK_FALSE(res.has_value());
     CHECK(res.bytes_read == 2);
-    res = neo::buffer_decode(dec, bytes);
+    res = neo::buffer_decode(dec, neo::as_buffer(bytes));
     CHECK(res.bytes_read == 2);
     CHECK(res.has_value());
     CHECK(res.value() == 0x00'05'00'00);
