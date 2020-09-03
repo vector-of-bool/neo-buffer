@@ -51,7 +51,7 @@ jobs:
           ./dds catalog add neo-concepts@0.4.0 --git-url https://github.com/vector-of-bool/neo-concepts.git --git-ref 0.4.0
           ./dds catalog add neo-fun@0.4.1 --git-url https://github.com/vector-of-bool/neo-fun.git --git-ref 0.4.1
         displayName: Prepare System
-      - script: ./dds build -t tools/gcc-9.jsonc
+      - script: ./dds build -t tools/gcc-10.jsonc
         displayName: Build and Run Unit Tests
 
   - job: macos_gcc9
@@ -85,5 +85,5 @@ jobs:
           ./dds catalog add neo-concepts@0.4.0 --git-url https://github.com/vector-of-bool/neo-concepts.git --git-ref 0.4.0
           ./dds catalog add neo-fun@0.4.1 --git-url https://github.com/vector-of-bool/neo-fun.git --git-ref 0.4.1
         displayName: Prepare System
-      - script: ./dds build -t tools/gcc-9.jsonc
+      - script: ./dds build -t tools/gcc-10.jsonc
         displayName: Build and Run Unit Tests
