@@ -42,43 +42,37 @@ using buffer_decode_type_t = decltype(std::declval<buffer_decode_result_t<D>>().
 // clang-format on
 
 /**
- * Base case: Decode a single buffer.
- */
-template <buffer_decoder Dec, single_buffer B>
-constexpr decltype(auto) buffer_decode(Dec&& decode,
-                                       B     buf)  //
-    noexcept(noexcept(decode(const_buffer()))) {
-    return decode(const_buffer(buf));
-}
-
-/**
- * Upper case: Decode from a stream/range of buffers
+ * Base case: Decode a single item from a buffer input
  */
 template <buffer_decoder Dec, buffer_input Source>
 constexpr decltype(auto) buffer_decode(Dec&&    decode,
                                        Source&& source) noexcept(noexcept(decode(const_buffer()))) {
-    buffer_decode_result_t<Dec> result;
-    std::size_t                 total_read = 0;
+    if constexpr (single_buffer<Source>) {
+        return decode(const_buffer(source));
+    } else {
+        buffer_decode_result_t<Dec> result;
+        std::size_t                 total_read = 0;
 
-    auto&& in = ensure_buffer_source(source);
+        auto&& in = ensure_buffer_source(source);
 
-    while (true) {
-        auto next = in.next(1024);
-        if (buffer_is_empty(next)) {
-            break;
+        while (true) {
+            auto next = in.next(1024);
+            if (buffer_is_empty(next)) {
+                break;
+            }
+            auto partial = buffer_decode(decode, next);
+            total_read += partial.bytes_read;
+            in.consume(partial.bytes_read);
+
+            result = std::move(partial);
+            if (result.has_value() || result.has_error()) {
+                break;
+            }
         }
-        auto partial = buffer_decode(decode, next);
-        total_read += partial.bytes_read;
-        in.consume(partial.bytes_read);
 
-        result = std::move(partial);
-        if (result.has_value() || result.has_error()) {
-            break;
-        }
+        result.bytes_read = total_read;
+        return result;
     }
-
-    result.bytes_read = total_read;
-    return result;
 }
 
 // clang-format off
