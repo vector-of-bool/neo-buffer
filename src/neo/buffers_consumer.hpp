@@ -134,6 +134,11 @@ public:
     using buffer_type = typename buffers_vec_consumer::buffers_consumer::buffer_type;
     using buffers_vec_consumer::buffers_consumer::buffers_consumer;
 
+    // Pull the base version of 'next' into scope so that it can be called in
+    // the case that the BaseRange is actually a single_buffer, and next() will
+    // just return a single contiguous buffer.
+    using buffers_vec_consumer::buffers_consumer::next;
+
     [[nodiscard]] constexpr auto next(std::size_t n_to_prepare) noexcept
         requires(!single_buffer<BaseRange>) {
         // Build a small vector of buffers from the whole sequence
