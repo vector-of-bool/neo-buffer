@@ -46,16 +46,18 @@ public:
         return _seq_it == _seq_stop || _remaining == 0;
     }
 
-    [[nodiscard]] constexpr auto prepare(std::size_t) const noexcept
+    [[nodiscard]] constexpr auto prepare(std::size_t n) const noexcept
         requires(mutable_buffer_range<BaseRange>) {
-        return next(1);
+        n = (std::min)(n, _remaining);
+        return next(n);
     }
 
-    [[nodiscard]] constexpr auto next(std::size_t) const noexcept {
+    [[nodiscard]] constexpr auto next(std::size_t n) const noexcept {
         if (_seq_it == _seq_stop) {
             return buffer_type();
         }
-        return as_buffer(*_seq_it + _cur_elem_offset, _remaining);
+        n = (std::min)(n, _remaining);
+        return as_buffer(*_seq_it + _cur_elem_offset, n);
     }
 
     constexpr void consume(std::size_t size) noexcept {
@@ -65,13 +67,13 @@ public:
                    "Attempted to consume more bytes than are available in a buffers_consumer",
                    size);
         while (_seq_it != _seq_stop && size != 0) {
-            auto buf = next(1);
+            auto buf = *_seq_it + _cur_elem_offset;
             if (size < buf.size()) {
                 // We're partially-consuming a buffer. Next time we iterate, we
                 // need to skip into that buffer.
                 _cur_elem_offset += size;
-                size = 0;
                 _remaining -= size;
+                size = 0;
             } else {
                 // Discard the entire buffer
                 size -= buf.size();
