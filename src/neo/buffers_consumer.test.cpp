@@ -41,6 +41,10 @@ TEST_CASE("Consume some buffers") {
     n_copied = buffer_copy(neo::as_buffer(str), cbs.next(6));
     CHECK(n_copied == 6);
     CHECK(str == "meowba7890");
+
+    auto              sbuf_cons = neo::buffers_vec_consumer{neo::const_buffer("One buffer")};
+    neo::const_buffer part      = sbuf_cons.next(10000);
+    CHECK(std::string_view(part) == "One buffer");
 }
 
 TEST_CASE("Buffer consumer for singular buffers") {

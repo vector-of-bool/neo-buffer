@@ -95,7 +95,7 @@ public:
     [[nodiscard]] constexpr auto end() const noexcept {
         auto cp = *this;
         while (cp._cur != cp._stop) {
-            cp._abs_pos += cp._cur->size();
+            cp._abs_pos += (*cp._cur).size();
             ++cp._cur;
         }
         return cp;
@@ -153,7 +153,7 @@ public:
         _idx += diff;
     }
 
-    constexpr auto& operator*() const noexcept { return _buf[_idx]; }
+    constexpr auto& dereference() const noexcept { return _buf[_idx]; }
 
     constexpr std::ptrdiff_t distance_to(bytewise_iterator other) const noexcept {
         return other._idx - _idx;
