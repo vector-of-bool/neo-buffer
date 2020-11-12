@@ -35,4 +35,12 @@ constexpr decltype(auto) ensure_buffer_sink(Out&& out) noexcept {
     }
 }
 
+template <typename T>
+constexpr bool noexcept_buffer_output_v;
+
+template <buffer_output T>
+constexpr bool noexcept_buffer_output_v<T> =                          //
+    noexcept(ensure_buffer_sink(ref_v<T>).commit(std::size_t(1))) &&  //
+    noexcept(ensure_buffer_sink(ref_v<T>).prepare(std::size_t(1)));
+
 }  // namespace neo

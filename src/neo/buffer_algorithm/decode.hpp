@@ -45,8 +45,8 @@ using buffer_decode_type_t = decltype(std::declval<buffer_decode_result_t<D>>().
  * Base case: Decode a single item from a buffer input
  */
 template <buffer_decoder Dec, buffer_input Source>
-constexpr decltype(auto) buffer_decode(Dec&& decode, Source&& source) noexcept(
-    noexcept(decode(const_buffer())) && noexcept(ensure_buffer_source(source).next(1))) {
+constexpr decltype(auto) buffer_decode(Dec&& decode, Source&& source)  //
+    noexcept(noexcept(decode(const_buffer())) && noexcept_buffer_input_v<Source>) {
     if constexpr (single_buffer<Source>) {
         return decode(const_buffer(source));
     } else {
@@ -140,7 +140,8 @@ constexpr decltype(auto) buffer_decode(Decode&& dec,
 template <buffer_input                                            Source,
           buffer_decoder                                          Decode,
           std::ranges::output_range<buffer_decode_type_t<Decode>> Out>
-constexpr decltype(auto) buffer_decode(Decode&& dec, Source&& source, Out&& out) noexcept {
+constexpr decltype(auto) buffer_decode(Decode&& dec, Source&& source, Out&& out) noexcept(
+    noexcept(buffer_decode(dec, source, std::ranges::begin(out), std::ranges::end(out)))) {
     return buffer_decode(dec, source, std::ranges::begin(out), std::ranges::end(out));
 }
 #endif

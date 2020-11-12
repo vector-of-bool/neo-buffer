@@ -84,7 +84,7 @@ private:
         return data() + minsize;
     }
 
-    constexpr void _clear() {
+    constexpr void _clear() noexcept {
         alloc_traits::deallocate(_alloc, _bytes_ptr, _size);
         _bytes_ptr = nullptr;
         _size      = 0;

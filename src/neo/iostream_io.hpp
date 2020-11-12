@@ -45,10 +45,10 @@ class iostream_io {
 public:
     iostream_io() = default;
 
-    explicit iostream_io(Stream&& in)
+    explicit iostream_io(Stream&& in) noexcept
         : _stream(NEO_FWD(in)) {}
 
-    explicit iostream_io(Stream&& in, DynBuffer&& db)
+    explicit iostream_io(Stream&& in, DynBuffer&& db) noexcept
         : _stream(NEO_FWD(in))
         , _buffer(NEO_FWD(db)) {}
 

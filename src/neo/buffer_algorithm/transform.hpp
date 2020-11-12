@@ -72,10 +72,9 @@ struct proto_buffer_transformer {
  * by an assertion)
  */
 template <typename... Args, buffer_transformer<Args...> Tr>
-constexpr auto buffer_transform(Tr&&           tr,
-                                mutable_buffer out,
-                                const_buffer   in,
-                                Args&&... args) noexcept(noexcept(tr(out, in, args...))) {
+constexpr auto buffer_transform(Tr&& tr, mutable_buffer out, const_buffer in, Args&&... args)  //
+    noexcept(noexcept(tr(out, in, args...)))                                                   //
+{
     auto result = tr(out, in, args...);
 
     // If the transformer declares that it is done, then we shouldn't check that
@@ -124,9 +123,10 @@ constexpr auto buffer_transform(Tr&&           tr,
 }
 
 template <buffer_output Out, buffer_input In, typename... Args, buffer_transformer<Args...> Tr>
-constexpr auto buffer_transform(Tr&& tr, Out&& out_, In&& in_, Args&&... args) noexcept(
-    noexcept(tr(mutable_buffer(), const_buffer(), args...)) && noexcept(
-        ensure_buffer_source(in_).next(1) && noexcept(ensure_buffer_sink(out_).prepare(1)))) {
+constexpr auto buffer_transform(Tr&& tr, Out&& out_, In&& in_, Args&&... args)  //
+    noexcept(noexcept(tr(mutable_buffer(), const_buffer(), args...))
+             && noexcept_buffer_input_v<In> && noexcept_buffer_output_v<Out>)  //
+{
     using result_type = buffer_transform_result_t<Tr>;
     // The growth size can vary based on the algorithm
     constexpr std::size_t growth_size

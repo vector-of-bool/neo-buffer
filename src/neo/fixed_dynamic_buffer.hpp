@@ -17,7 +17,7 @@ private:
 
 public:
     constexpr fixed_dynamic_buffer() = default;
-    constexpr explicit fixed_dynamic_buffer(Storage&& c)
+    constexpr explicit fixed_dynamic_buffer(Storage&& c) noexcept
         : _storage(NEO_FWD(c)) {}
 
     NEO_DECL_UNREF_GETTER(storage, _storage);

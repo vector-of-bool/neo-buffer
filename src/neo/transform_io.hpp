@@ -22,14 +22,14 @@ class buffer_transform_sink {
 
 public:
     constexpr buffer_transform_sink() = default;
-    constexpr explicit buffer_transform_sink(Sink&& s)
+    constexpr explicit buffer_transform_sink(Sink&& s) noexcept
         : _sink(NEO_FWD(s)) {}
 
-    constexpr explicit buffer_transform_sink(Sink&& s, Transform&& tr)
+    constexpr explicit buffer_transform_sink(Sink&& s, Transform&& tr) noexcept
         : _sink(NEO_FWD(s))
         , _transformer(NEO_FWD(tr)) {}
 
-    constexpr explicit buffer_transform_sink(Sink&& s, Transform&& tr, DynBuffer&& db)
+    constexpr explicit buffer_transform_sink(Sink&& s, Transform&& tr, DynBuffer&& db) noexcept
         : _sink(NEO_FWD(s))
         , _transformer(NEO_FWD(tr))
         , _buffer(NEO_FWD(db)) {}
@@ -38,7 +38,7 @@ public:
     NEO_DECL_UNREF_GETTER(transformer, _transformer);
     NEO_DECL_UNREF_GETTER(buffer, _buffer);
 
-    auto prepare(std::size_t prep_size) noexcept {
+    auto prepare(std::size_t prep_size) noexcept(noexcept(buffer().grow(prep_size))) {
         auto& buf   = buffer();
         auto  avail = buf.size();
         if (avail >= prep_size) {
@@ -49,7 +49,9 @@ public:
         return buf.data(0, buf.size());
     }
 
-    void commit(std::size_t n) noexcept {
+    void commit(std::size_t n) noexcept(
+        noexcept(buffer_transform(transformer(), sink(), buffer().data(1, 1))))  //
+    {
         auto&  buf     = buffer();
         auto&& databuf = buf.data(0, n);
         buffer_transform(transformer(), sink(), databuf);
@@ -75,14 +77,14 @@ class buffer_transform_source {
 
 public:
     constexpr buffer_transform_source() = default;
-    constexpr explicit buffer_transform_source(Source&& s)
+    constexpr explicit buffer_transform_source(Source&& s) noexcept
         : _source(NEO_FWD(s)) {}
 
-    constexpr explicit buffer_transform_source(Source&& s, Transform&& tr)
+    constexpr explicit buffer_transform_source(Source&& s, Transform&& tr) noexcept
         : _source(NEO_FWD(s))
         , _transformer(NEO_FWD(tr)) {}
 
-    constexpr explicit buffer_transform_source(Source&& s, Transform&& tr, DynBuffer&& db)
+    constexpr explicit buffer_transform_source(Source&& s, Transform&& tr, DynBuffer&& db) noexcept
         : _source(NEO_FWD(s))
         , _transformer(NEO_FWD(tr))
         , _buffer(NEO_FWD(db)) {}
@@ -91,7 +93,10 @@ public:
     NEO_DECL_UNREF_GETTER(transformer, _transformer);
     NEO_DECL_UNREF_GETTER(buffer, _buffer);
 
-    auto next(std::size_t want_size) {
+    auto next(std::size_t want_size)                                                        //
+        noexcept(noexcept(buffer().grow(want_size)) &&                                      //
+                 noexcept(buffer_transform(transformer(), buffer().data(1, 1), source())))  //
+    {
         auto& buf = buffer();
         if (_avail >= want_size) {
             return buf.data(0, want_size);
