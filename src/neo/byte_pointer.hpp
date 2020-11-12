@@ -1,7 +1,6 @@
 #pragma once
 
 #include <neo/concepts.hpp>
-#include <neo/test_concept.hpp>
 
 #include <cstddef>
 #include <type_traits>
@@ -26,8 +25,6 @@ concept buffer_safe =
 template <typename T>
 concept buffer_safe_cvr = buffer_safe<std::remove_cvref_t<T>>;
 // clang-format on
-
-NEO_TEST_CONCEPT(buffer_safe<proto_buffer_safe>);
 
 /**
  * Convert the given pointer to a pointer to `std::byte` referring to the

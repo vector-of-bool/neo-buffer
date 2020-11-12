@@ -7,6 +7,9 @@
 
 using namespace neo;
 
+static_assert(buffer_range<static_buffer_vector<const_buffer, 4>>);
+static_assert(mutable_buffer_range<static_buffer_vector<mutable_buffer, 4>>);
+
 TEST_CASE("Create a zero-length buffer vector") {
     static_buffer_vector<const_buffer, 0> b;
     CHECK(buffer_count(b) == 0);

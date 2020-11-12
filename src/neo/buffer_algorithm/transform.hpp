@@ -7,7 +7,6 @@
 #include <neo/assert.hpp>
 #include <neo/fwd.hpp>
 #include <neo/ref.hpp>
-#include <neo/test_concept.hpp>
 
 #include <functional>
 

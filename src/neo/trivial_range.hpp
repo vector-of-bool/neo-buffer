@@ -63,7 +63,6 @@ struct proto_trivial_range {
     const int*  data() const;
     std::size_t size() const;
 };
-static_assert(trivial_range<proto_trivial_range>);
 
 /**
  * Model a trivial_range that can be used to write-thru to the underlying data.
@@ -83,7 +82,6 @@ struct proto_mutable_trivial_range {
     const int*  data() const;
     std::size_t size() const;
 };
-static_assert(mutable_trivial_range<proto_mutable_trivial_range>);
 
 /**
  * Given a data container, return the size of the data referenced by that

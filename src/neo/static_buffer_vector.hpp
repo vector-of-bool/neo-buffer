@@ -60,7 +60,4 @@ struct static_buffer_vector {
     }
 };
 
-static_assert(buffer_range<static_buffer_vector<const_buffer, 4>>);
-static_assert(mutable_buffer_range<static_buffer_vector<mutable_buffer, 4>>);
-
 }  // namespace neo
