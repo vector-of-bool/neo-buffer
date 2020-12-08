@@ -27,7 +27,9 @@ private:
 public:
     constexpr counting_buffers() = default;
 
-    constexpr explicit counting_buffers(Bufs&& s, Handler&& h)
+    constexpr explicit counting_buffers(Bufs&& s, Handler&& h) noexcept(
+        std::is_nothrow_constructible_v<wrap_refs_t<Bufs>, Bufs>&&
+            std::is_nothrow_constructible_v<wrap_refs_t<Handler>, Handler>)
         : _bufs(NEO_FWD(s))
         , _handler(NEO_FWD(h)) {}
 
@@ -37,20 +39,23 @@ public:
     NEO_DECL_UNREF_GETTER(handler, _handler);
     NEO_DECL_REF_REBINDER(rebind_handler, Handler, _handler);
 
-    constexpr decltype(auto) prepare(std::size_t s) requires buffer_sink<Bufs> {
+    constexpr decltype(auto)
+    prepare(std::size_t s) noexcept(noexcept_buffer_output_v<Bufs>) requires buffer_sink<Bufs> {
         return buffers().prepare(s);
     }
 
-    constexpr decltype(auto) next(std::size_t s) requires buffer_source<Bufs> {
+    constexpr decltype(auto)
+    next(std::size_t s) noexcept(noexcept_buffer_input_v<Bufs>) requires buffer_source<Bufs> {
         return buffers().next(s);
     }
 
-    void commit(std::size_t s) requires buffer_sink<Bufs> {
+    void commit(std::size_t s) noexcept(noexcept_buffer_output_v<Bufs>) requires buffer_sink<Bufs> {
         buffers().commit(s);
         std::invoke(handler(), buffers_count{.bytes_committed = s});
     }
 
-    void consume(std::size_t s) requires buffer_source<Bufs> {
+    void
+    consume(std::size_t s) noexcept(noexcept_buffer_input_v<Bufs>) requires buffer_source<Bufs> {
         buffers().consume(s);
         std::invoke(handler(), buffers_count{.bytes_consumed = s});
     }
