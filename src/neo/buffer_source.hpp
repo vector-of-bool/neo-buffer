@@ -4,6 +4,7 @@
 #include <neo/buffers_consumer.hpp>
 
 #include <neo/fwd.hpp>
+#include <neo/ref.hpp>
 #include <neo/returns.hpp>
 
 namespace neo {
@@ -17,7 +18,7 @@ template <typename T>
 concept buffer_source =
     requires (T source, std::size_t size) {
         { source.next(size) } -> buffer_range;
-        source.consume(size);
+        { source.consume(size) } noexcept;
     };
 // clang-format on
 
@@ -25,7 +26,7 @@ struct proto_buffer_source {
     proto_buffer_source() = delete;
 
     proto_buffer_range next(std::size_t);
-    void               consume(std::size_t);
+    void               consume(std::size_t) noexcept;
 };
 
 template <buffer_source T>
@@ -42,5 +43,12 @@ constexpr decltype(auto) ensure_buffer_source(B&& b) noexcept {
         return buffers_consumer(NEO_FWD(b));
     }
 }
+
+template <typename T>
+constexpr bool noexcept_buffer_input_v;
+
+template <buffer_input T>
+constexpr bool
+    noexcept_buffer_input_v<T> = noexcept(ensure_buffer_source(ref_v<T>).next(std::size_t(1)));
 
 }  // namespace neo

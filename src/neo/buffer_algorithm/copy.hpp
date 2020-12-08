@@ -102,7 +102,9 @@ buffer_copy(mutable_buffer dest, mutable_buffer src, std::size_t max_copy, Copy&
  */
 template <buffer_output Dest, buffer_input Source, ll_buffer_copy_fn Copy>
 constexpr std::size_t
-buffer_copy(Dest&& dest, Source&& src, std::size_t max_copy, Copy&& copy) noexcept {
+buffer_copy(Dest&& dest, Source&& src, std::size_t max_copy, Copy&& copy)
+    noexcept(noexcept_buffer_output_v<Dest> && noexcept_buffer_input_v<Source>)
+{
     // clang-format on
     auto remaining = max_copy;
 
@@ -126,21 +128,24 @@ buffer_copy(Dest&& dest, Source&& src, std::size_t max_copy, Copy&& copy) noexce
 
 // clang-format off
 template <typename Dest, typename Source>
-constexpr std::size_t buffer_copy(Dest&& dest, Source&& source, std::size_t max_copy) noexcept
+constexpr std::size_t buffer_copy(Dest&& dest, Source&& source, std::size_t max_copy)
+    noexcept(noexcept(buffer_copy(dest, source, max_copy, ll_buffer_copy_safe)))
     requires requires { buffer_copy(dest, source, max_copy, ll_buffer_copy_safe); }
 {
     return buffer_copy(dest, source, max_copy, ll_buffer_copy_safe);
 }
 
 template <typename Dest, typename Source, ll_buffer_copy_fn Copy>
-constexpr std::size_t buffer_copy(Dest&& dest, Source&& source, Copy&& copy) noexcept
+constexpr std::size_t buffer_copy(Dest&& dest, Source&& source, Copy&& copy)
+    noexcept(noexcept(buffer_copy(dest, source, std::size_t(), copy)))
     requires requires(std::size_t s) { buffer_copy(dest, source, s, copy); }
 {
     return buffer_copy(dest, source, std::numeric_limits<std::size_t>::max(), copy);
 }
 
 template <typename Dest, typename Source>
-constexpr std::size_t buffer_copy(Dest&& dest, Source&& source) noexcept
+constexpr std::size_t buffer_copy(Dest&& dest, Source&& source)
+    noexcept(noexcept(buffer_copy(dest, source, std::size_t(), ll_buffer_copy_safe)))
     requires requires(std::size_t s) { buffer_copy(dest, source, s, ll_buffer_copy_safe); }
 {
     return buffer_copy(dest, source, ll_buffer_copy_safe);

@@ -53,12 +53,12 @@ public:
             return neo::as_buffer(*_it);
         }
 
-        constexpr void advance(std::ptrdiff_t off) noexcept
+        constexpr void advance(std::ptrdiff_t off) noexcept(noexcept(_it += off))  //
             requires(random_access_iterator<inner_iterator>) {
             _it += off;
         }
 
-        constexpr void increment() noexcept {
+        constexpr void increment() noexcept(noexcept(++_it)) {
             if constexpr (uses_sentinel) {
                 neo_assert(expects,
                            !at_end(),
@@ -78,8 +78,10 @@ public:
         }
     };
 
-    constexpr iterator begin() noexcept { return iterator(std::begin(range())); }
-    constexpr auto     end() noexcept {
+    constexpr iterator begin() noexcept(noexcept(std::begin(range()))) {
+        return iterator(std::begin(range()));
+    }
+    constexpr auto end() noexcept {
         if constexpr (uses_sentinel) {
             return typename iterator::sentinel_type();
         } else {

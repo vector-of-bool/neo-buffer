@@ -27,10 +27,10 @@ private:
 public:
     constexpr shifting_dynamic_buffer() = default;
 
-    constexpr explicit shifting_dynamic_buffer(Storage&& s)
+    constexpr explicit shifting_dynamic_buffer(Storage&& s) noexcept
         : _storage(NEO_FWD(s)) {}
 
-    constexpr shifting_dynamic_buffer(Storage&& s, std::size_t size)
+    constexpr shifting_dynamic_buffer(Storage&& s, std::size_t size) noexcept
         : _storage(NEO_FWD(s))
         , _size(size) {}
 
@@ -43,8 +43,7 @@ public:
     constexpr auto size() const noexcept { return _size; }
     constexpr auto capacity() const noexcept { return inner_buffer().size() - _beg_idx; }
 
-    constexpr auto data(std::size_t pos, std::size_t size_) const
-        noexcept(noexcept(inner_buffer().data(0, 0))) {
+    constexpr auto data(std::size_t pos, std::size_t size_) const noexcept {
         neo_assert(expects,
                    size_ <= size(),
                    "Cannot read more bytes than are contained in a dynamic buffer",
@@ -54,8 +53,7 @@ public:
         return inner_buffer().data(pos + _beg_idx, size_);
     }
 
-    constexpr auto data(std::size_t pos,
-                        std::size_t size_) noexcept(noexcept(inner_buffer().data(0, 0))) {
+    constexpr auto data(std::size_t pos, std::size_t size_) noexcept {
         neo_assert(expects,
                    size_ <= size(),
                    "Cannot read more bytes than are contained in a dynamic buffer",
@@ -65,7 +63,7 @@ public:
         return inner_buffer().data(pos + _beg_idx, size_);
     }
 
-    constexpr auto grow(std::size_t more) noexcept(noexcept(inner_buffer().grow(0))) {
+    constexpr auto grow(std::size_t more) noexcept(noexcept(inner_buffer().grow(more))) {
         std::size_t prev_size  = size();
         std::size_t end_idx    = _beg_idx + _size;
         const auto  avail_room = inner_buffer().size() - end_idx;

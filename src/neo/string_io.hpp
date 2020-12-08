@@ -8,6 +8,8 @@
 namespace neo {
 
 struct string_dynbuf_io : dynbuf_io<std::string> {
+    using dynbuf_io::dynbuf_io;
+
     decltype(auto) string() & noexcept { return storage(); }
     decltype(auto) string() const& noexcept { return storage(); }
     decltype(auto) string() && noexcept { return std::move(*this).storage(); }
@@ -20,6 +22,8 @@ struct string_dynbuf_io : dynbuf_io<std::string> {
 struct shifting_string_buffer : shifting_dynamic_buffer<std::string> {};
 
 struct shifting_string_dynbuf_io : dynbuf_io<shifting_string_buffer> {
+    using dynbuf_io::dynbuf_io;
+
     decltype(auto) string() & noexcept { return storage().storage(); }
     decltype(auto) string() const& noexcept { return storage().storage(); }
     decltype(auto) string() && noexcept { return std::move(*this).storage().storage(); }

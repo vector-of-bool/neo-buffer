@@ -41,7 +41,9 @@ using buffer_encode_result_t = std::invoke_result_t<Enc, mutable_buffer, T&>;
  * Base overload: Encode a single item into a buffer/range/sink
  */
 template <buffer_output Out, typename T, buffer_encoder<T> Enc>
-constexpr decltype(auto) buffer_encode(Enc&& enc, Out&& out_, T&& val) noexcept {
+constexpr decltype(auto) buffer_encode(Enc&& enc, Out&& out_, T&& val)               //
+    noexcept(noexcept(enc(mutable_buffer(), val)) && noexcept_buffer_output_v<Out>)  //
+{
     if constexpr (single_buffer<Out>) {
         return enc(out_, val);
     } else {

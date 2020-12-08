@@ -24,10 +24,10 @@ class dynbuf_io {
 public:
     constexpr dynbuf_io() = default;
 
-    constexpr explicit dynbuf_io(DynBuf&& db)
+    constexpr explicit dynbuf_io(DynBuf&& db) noexcept
         : _dyn_buf(NEO_FWD(db)) {}
 
-    constexpr dynbuf_io(DynBuf&& db, std::size_t read_area_size)
+    constexpr dynbuf_io(DynBuf&& db, std::size_t read_area_size) noexcept
         : _dyn_buf(NEO_FWD(db))
         , _read_area_size(read_area_size) {}
 
@@ -38,12 +38,12 @@ public:
 
     constexpr std::size_t available() const noexcept { return _read_area_size; }
 
-    constexpr decltype(auto) next(std::size_t size) const {
+    constexpr decltype(auto) next(std::size_t size) const noexcept {
         auto read_size = (std::min)(size, _read_area_size);
         return buffer().data(0, read_size);
     }
 
-    constexpr void consume(std::size_t s) {
+    constexpr void consume(std::size_t s) noexcept {
         neo_assert(expects,
                    s <= _read_area_size,
                    "Cannot consume more bytes than are available in the read-area",
@@ -54,7 +54,7 @@ public:
         _read_area_size -= s;
     }
 
-    constexpr decltype(auto) prepare(std::size_t size) {
+    constexpr decltype(auto) prepare(std::size_t size) noexcept(noexcept(buffer().grow(size))) {
         if (size <= _get_write_area_size()) {
             // There's enough room in the output area to just yield it
             return buffer().data(_read_area_size, size);

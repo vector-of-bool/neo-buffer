@@ -131,7 +131,7 @@ public:
     constexpr bytewise_iterator() = default;
 
     template <alike<T> A>
-    constexpr explicit bytewise_iterator(A&& b)
+    constexpr explicit bytewise_iterator(A&& b) noexcept
         : _buf(b) {}
 
     [[nodiscard]] constexpr auto begin() const noexcept { return *this; }

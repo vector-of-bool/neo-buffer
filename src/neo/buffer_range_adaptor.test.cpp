@@ -4,6 +4,7 @@
 #include <neo/buffer_algorithm/copy.hpp>
 #include <neo/buffer_algorithm/transform.hpp>
 #include <neo/dynbuf_io.hpp>
+#include <neo/test_concept.hpp>
 
 #include <catch2/catch.hpp>
 

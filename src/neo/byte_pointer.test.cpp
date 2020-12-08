@@ -1,11 +1,13 @@
 #include <neo/byte_pointer.hpp>
+#include <neo/test_concept.hpp>
 
 #include <catch2/catch.hpp>
 
-static_assert(!neo::buffer_safe<std::string>);
-static_assert(!neo::buffer_safe<std::string[6]>);
-static_assert(neo::buffer_safe<int[6]>);
-static_assert(neo::buffer_safe<int>);
+NEO_TEST_CONCEPT(!neo::buffer_safe<std::string>);
+NEO_TEST_CONCEPT(!neo::buffer_safe<std::string[6]>);
+NEO_TEST_CONCEPT(neo::buffer_safe<int[6]>);
+NEO_TEST_CONCEPT(neo::buffer_safe<int>);
+NEO_TEST_CONCEPT(neo::buffer_safe<neo::proto_buffer_safe>);
 
 TEST_CASE("Byte pointer") {
     int  i     = 0;
