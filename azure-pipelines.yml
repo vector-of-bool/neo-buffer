@@ -11,29 +11,9 @@ jobs:
           echo Loading VS environment
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\vsdevcmd" -arch=x64 || exit 1
           echo Downloading DDS executable
-          pwsh -noni -c iwr https://github.com/vector-of-bool/dds/releases/download/0.1.0-alpha.4/dds-win-x64.exe -OutFile dds.exe || exit 1
+          pwsh -noni -c iwr https://github.com/vector-of-bool/dds/releases/download/0.1.0-alpha.6/dds-win-x64.exe -OutFile dds.exe || exit 1
           echo Build
-          .\dds catalog add neo-concepts@0.4.0 --git-url https://github.com/vector-of-bool/neo-concepts.git --git-ref 0.4.0
-          .\dds catalog add neo-fun@0.5.4 --git-url https://github.com/vector-of-bool/neo-fun.git --git-ref 0.5.4
           .\dds.exe build -t tools/msvc.jsonc
-        displayName: Build and Run Unit Tests
-
-  - job: linux_gcc9
-    displayName: Linux - GCC 9
-    pool:
-      vmImage: ubuntu-18.04
-    steps:
-      - script: |
-          set -eu
-          sudo apt update -y
-          sudo apt install -y g++-9
-          echo Downloading DDS executable
-          curl -L https://github.com/vector-of-bool/dds/releases/download/0.1.0-alpha.4/dds-linux-x64 -o dds
-          chmod +x dds
-          ./dds catalog add neo-concepts@0.4.0 --git-url https://github.com/vector-of-bool/neo-concepts.git --git-ref 0.4.0
-          ./dds catalog add neo-fun@0.5.4 --git-url https://github.com/vector-of-bool/neo-fun.git --git-ref 0.5.4
-        displayName: Prepare System
-      - script: ./dds build -t tools/gcc-9.jsonc
         displayName: Build and Run Unit Tests
 
   - job: linux_gcc10
@@ -46,29 +26,10 @@ jobs:
           sudo apt update -y
           sudo apt install -y g++-10
           echo Downloading DDS executable
-          curl -L https://github.com/vector-of-bool/dds/releases/download/0.1.0-alpha.4/dds-linux-x64 -o dds
+          curl -L https://github.com/vector-of-bool/dds/releases/download/0.1.0-alpha.6/dds-linux-x64 -o dds
           chmod +x dds
-          ./dds catalog add neo-concepts@0.4.0 --git-url https://github.com/vector-of-bool/neo-concepts.git --git-ref 0.4.0
-          ./dds catalog add neo-fun@0.5.4 --git-url https://github.com/vector-of-bool/neo-fun.git --git-ref 0.5.4
         displayName: Prepare System
       - script: ./dds build -t tools/gcc-10.jsonc
-        displayName: Build and Run Unit Tests
-
-  - job: macos_gcc9
-    displayName: macOS - GCC 9
-    pool:
-      vmImage: macOS-10.14
-    steps:
-      - script: |
-          set -eu
-          brew install gcc@9
-          echo Downloading DDS executable
-          curl -L https://github.com/vector-of-bool/dds/releases/download/0.1.0-alpha.4/dds-macos-x64 -o dds
-          chmod +x dds
-          ./dds catalog add neo-concepts@0.4.0 --git-url https://github.com/vector-of-bool/neo-concepts.git --git-ref 0.4.0
-          ./dds catalog add neo-fun@0.5.4 --git-url https://github.com/vector-of-bool/neo-fun.git --git-ref 0.5.4
-        displayName: Prepare System
-      - script: ./dds build -t tools/gcc-9.jsonc
         displayName: Build and Run Unit Tests
 
   - job: macos_gcc10
@@ -80,10 +41,8 @@ jobs:
           set -eu
           brew install gcc@10
           echo Downloading DDS executable
-          curl -L https://github.com/vector-of-bool/dds/releases/download/0.1.0-alpha.4/dds-macos-x64 -o dds
+          curl -L https://github.com/vector-of-bool/dds/releases/download/0.1.0-alpha.6/dds-macos-x64 -o dds
           chmod +x dds
-          ./dds catalog add neo-concepts@0.4.0 --git-url https://github.com/vector-of-bool/neo-concepts.git --git-ref 0.4.0
-          ./dds catalog add neo-fun@0.5.4 --git-url https://github.com/vector-of-bool/neo-fun.git --git-ref 0.5.4
         displayName: Prepare System
       - script: ./dds build -t tools/gcc-10.jsonc
         displayName: Build and Run Unit Tests
