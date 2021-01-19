@@ -35,14 +35,15 @@ public:
 
     NEO_DECL_UNREF_GETTER(range, _range);
 
-    class iterator : public iterator_facade<iterator>,
-                     public std::conditional_t<uses_sentinel, sentinel_base, nothing> {
+    class iterator : public iterator_facade<iterator> {
         [[no_unique_address]] inner_iterator _it;
 
     public:
         constexpr iterator() = default;
         constexpr explicit iterator(inner_iterator it)
             : _it(it) {}
+
+        struct sentinel_type {};
 
         constexpr decltype(auto) dereference() const noexcept {
             if constexpr (uses_sentinel) {
@@ -61,7 +62,7 @@ public:
         constexpr void increment() noexcept(noexcept(++_it)) {
             if constexpr (uses_sentinel) {
                 neo_assert(expects,
-                           !at_end(),
+                           !at_end(sentinel_type{}),
                            "Advanced a past-the-end buffer_range_adaptor::iterator");
             }
             ++_it;
@@ -72,8 +73,7 @@ public:
         }
 
         constexpr bool equal_to(iterator other) const noexcept { return _it == other._it; }
-
-        constexpr bool at_end() const noexcept requires(bool(uses_sentinel)) {
+        constexpr bool equal_to(sentinel_type) const noexcept requires(bool(uses_sentinel)) {
             return _it == inner_sentinel();
         }
     };
