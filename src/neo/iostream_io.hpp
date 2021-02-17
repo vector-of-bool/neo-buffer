@@ -78,12 +78,14 @@ public:
         if (buf.available() >= want_size) {
             // We already have enough bytes that we can just return that
             return buf.next(want_size);
+        } else if (buf.available()) {
+            return buf.next(buf.available());
+        } else {
+            // Buffer is empty. Read some more.
         }
 
         // Get a buffer to read into
-        auto need_read = want_size - buf.available();
-        auto read_buf  = buf.prepare(need_read);
-
+        const auto  read_buf     = buf.prepare(want_size);
         std::size_t n_total_read = buffer_ios_read(stream(), read_buf);
         // Commit the bytes we read into the read-area of the dynbuffer, and return that area:
         buf.commit(n_total_read);
