@@ -72,8 +72,8 @@ public:
             --_it;
         }
 
-        constexpr bool equal_to(iterator other) const noexcept { return _it == other._it; }
-        constexpr bool equal_to(sentinel_type) const noexcept requires(bool(uses_sentinel)) {
+        constexpr bool operator==(iterator other) const noexcept { return _it == other._it; }
+        constexpr bool operator==(sentinel_type) const noexcept requires(bool(uses_sentinel)) {
             return _it == inner_sentinel();
         }
     };

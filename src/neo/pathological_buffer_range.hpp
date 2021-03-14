@@ -35,7 +35,7 @@ public:
 
         constexpr buffer_type dereference() const noexcept { return buffer_type(_ptr, 1); }
         constexpr void        increment() noexcept { ++_ptr; }
-        constexpr bool        equal_to(iterator o) const noexcept { return _ptr == o._ptr; }
+        constexpr bool        operator==(iterator o) const noexcept { return _ptr == o._ptr; }
     };
 
     constexpr auto begin() const noexcept { return iterator(_buf.data()); }

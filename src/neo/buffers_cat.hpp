@@ -131,7 +131,7 @@ public:
 
         constexpr buffer_type dereference() const noexcept { return _deref<0>(); }
         constexpr void        increment() noexcept { _increment<0>(); }
-        constexpr bool        equal_to(const iterator& other) const noexcept {
+        constexpr bool        operator==(const iterator& other) const noexcept {
             return _iter_var == other._iter_var;
         }
     };

@@ -25,8 +25,8 @@ public:
         : _buf(b) {}
 
     constexpr Buffer dereference() const noexcept { return _buf; }
-    constexpr bool   equal_to(single_buffer_iter o) const noexcept { return _dead == o._dead; }
-    constexpr bool   equal_to(sentinel_type) const noexcept { return _dead; }
+    constexpr bool   operator==(single_buffer_iter o) const noexcept { return _dead == o._dead; }
+    constexpr bool   operator==(sentinel_type) const noexcept { return _dead; }
 
     constexpr void increment() noexcept {
         neo_assert(expects, !_dead, "Advanced a single-buffer iterator that was already advanced");
