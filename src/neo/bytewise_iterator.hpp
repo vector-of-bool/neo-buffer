@@ -104,6 +104,9 @@ public:
     constexpr std::ptrdiff_t distance_to(const bytewise_iterator& other) const noexcept {
         return other._abs_pos - _abs_pos;
     }
+    constexpr bool operator==(const bytewise_iterator& other) const noexcept {
+        return other._abs_pos == _abs_pos;
+    }
 
     constexpr void increment() noexcept { _advance(1); }
     constexpr void decrement() noexcept requires bidirectional_iterator<inner_iter_type> {
@@ -157,6 +160,9 @@ public:
 
     constexpr std::ptrdiff_t distance_to(bytewise_iterator other) const noexcept {
         return other._idx - _idx;
+    }
+    constexpr bool operator==(const bytewise_iterator& other) const noexcept {
+        return other._idx == _idx;
     }
 };
 
