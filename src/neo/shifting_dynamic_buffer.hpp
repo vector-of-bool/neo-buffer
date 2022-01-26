@@ -6,7 +6,7 @@
 
 #include <neo/assert.hpp>
 #include <neo/fwd.hpp>
-#include <neo/ref.hpp>
+#include <neo/ref_member.hpp>
 
 #include <limits>
 #include <numeric>
@@ -19,7 +19,7 @@ public:
     using storage_type = std::remove_cvref_t<Storage>;
 
 private:
-    wrap_refs_t<Storage> _storage;
+    wrap_ref_member_t<Storage> _storage;
 
     std::size_t _beg_idx = 0;
     std::size_t _size    = unref(_storage).size();
@@ -116,7 +116,7 @@ public:
 };  // namespace neo
 
 template <as_dynamic_buffer_convertible S>
-explicit shifting_dynamic_buffer(S &&) -> shifting_dynamic_buffer<S>;
+explicit shifting_dynamic_buffer(S&&) -> shifting_dynamic_buffer<S>;
 
 template <as_dynamic_buffer_convertible S>
 shifting_dynamic_buffer(S&&, std::size_t) -> shifting_dynamic_buffer<S>;

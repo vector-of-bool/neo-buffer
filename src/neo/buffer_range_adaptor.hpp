@@ -5,12 +5,14 @@
 #include <neo/assert.hpp>
 #include <neo/iterator_concepts.hpp>
 #include <neo/iterator_facade.hpp>
-#include <neo/ref.hpp>
+#include <neo/ref_member.hpp>
+
+#include <ranges>
 
 namespace neo {
 
 template <typename Range>
-requires(as_buffer_convertible<iter_value_t<decltype(std::begin(ref_v<Range>))>>)  //
+requires(as_buffer_convertible<std::ranges::range_reference_t<Range>>)  //
     class buffer_range_adaptor {
 public:
     using range_type     = std::remove_cvref_t<Range>;
@@ -19,7 +21,7 @@ public:
     using value_type     = as_buffer_t<iter_value_t<inner_iterator>>;
 
 private:
-    [[no_unique_address]] wrap_refs_t<Range> _range;
+    [[no_unique_address]] wrap_ref_member_t<Range> _range;
 
     enum { uses_sentinel = !same_as<inner_iterator, inner_sentinel> };
 
@@ -91,7 +93,6 @@ public:
 };
 
 template <typename Range>
-requires as_buffer_convertible<iter_value_t<decltype(std::begin(ref_v<Range>))>>
 buffer_range_adaptor(Range&& rng) -> buffer_range_adaptor<Range>;
 
 }  // namespace neo

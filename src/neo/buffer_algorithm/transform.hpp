@@ -5,10 +5,7 @@
 #include <neo/buffers_consumer.hpp>
 
 #include <neo/assert.hpp>
-#include <neo/fwd.hpp>
-#include <neo/ref.hpp>
-
-#include <functional>
+#include <neo/invoke.hpp>
 
 namespace neo {
 
@@ -25,7 +22,7 @@ concept buffer_transform_result =
 
 template <typename T, typename... MoreArgs>
 concept buffer_transformer =
-    invocable<T, mutable_buffer, const_buffer, MoreArgs...> &&
+    neo::invocable2<T, mutable_buffer, const_buffer, MoreArgs...> &&
     buffer_transform_result<std::invoke_result_t<T, mutable_buffer, const_buffer, MoreArgs...>>;
 // clang-format on
 
@@ -33,8 +30,7 @@ template <typename T>
 constexpr std::size_t buffer_transform_dynamic_growth_hint_v = 1024;
 
 template <typename T, typename... Args>
-using buffer_transform_result_t
-    = decltype(ref_v<T>(mutable_buffer(), const_buffer(), ref_v<Args>...));
+using buffer_transform_result_t = neo::invoke_result_t<T&, mutable_buffer, const_buffer, Args...>;
 
 struct proto_buffer_transform_result {
     proto_buffer_transform_result& operator+=(const proto_buffer_transform_result&) noexcept;
