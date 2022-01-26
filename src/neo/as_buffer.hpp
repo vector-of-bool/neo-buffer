@@ -8,7 +8,7 @@
 
 #include <neo/concepts.hpp>
 #include <neo/fwd.hpp>
-#include <neo/ref.hpp>
+#include <neo/ref_member.hpp>
 
 #include <algorithm>
 #include <type_traits>

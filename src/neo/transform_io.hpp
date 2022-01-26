@@ -6,7 +6,7 @@
 #include "./string_io.hpp"
 
 #include <neo/fwd.hpp>
-#include <neo/ref.hpp>
+#include <neo/ref_member.hpp>
 
 #include <string>
 
@@ -16,9 +16,9 @@ template <buffer_sink        Sink,
           buffer_transformer Transform,
           dynamic_buffer     DynBuffer = shifting_string_buffer>
 class buffer_transform_sink {
-    [[no_unique_address]] wrap_refs_t<Sink>      _sink;
-    [[no_unique_address]] wrap_refs_t<Transform> _transformer;
-    [[no_unique_address]] wrap_refs_t<DynBuffer> _buffer;
+    [[no_unique_address]] wrap_ref_member_t<Sink>      _sink;
+    [[no_unique_address]] wrap_ref_member_t<Transform> _transformer;
+    [[no_unique_address]] wrap_ref_member_t<DynBuffer> _buffer;
 
 public:
     constexpr buffer_transform_sink() = default;
@@ -60,18 +60,18 @@ public:
 };
 
 template <typename S, typename Tr>
-explicit buffer_transform_sink(S&&, Tr &&) -> buffer_transform_sink<S, Tr>;
+explicit buffer_transform_sink(S&&, Tr&&) -> buffer_transform_sink<S, Tr>;
 
 template <typename S, typename Tr, typename B>
-explicit buffer_transform_sink(S&&, Tr&&, B &&) -> buffer_transform_sink<S, Tr, B>;
+explicit buffer_transform_sink(S&&, Tr&&, B&&) -> buffer_transform_sink<S, Tr, B>;
 
 template <buffer_source      Source,
           buffer_transformer Transform,
           dynamic_buffer     DynBuffer = shifting_string_buffer>
 class buffer_transform_source {
-    [[no_unique_address]] wrap_refs_t<Source>    _source;
-    [[no_unique_address]] wrap_refs_t<Transform> _transformer;
-    [[no_unique_address]] wrap_refs_t<DynBuffer> _buffer;
+    [[no_unique_address]] wrap_ref_member_t<Source>    _source;
+    [[no_unique_address]] wrap_ref_member_t<Transform> _transformer;
+    [[no_unique_address]] wrap_ref_member_t<DynBuffer> _buffer;
 
     std::size_t _avail = unref(_buffer).size();
 
@@ -132,9 +132,9 @@ public:
 };
 
 template <typename S, typename Tr>
-explicit buffer_transform_source(S&&, Tr &&) -> buffer_transform_source<S, Tr>;
+explicit buffer_transform_source(S&&, Tr&&) -> buffer_transform_source<S, Tr>;
 
 template <typename S, typename Tr, typename B>
-explicit buffer_transform_source(S&&, Tr&&, B &&) -> buffer_transform_source<S, Tr, B>;
+explicit buffer_transform_source(S&&, Tr&&, B&&) -> buffer_transform_source<S, Tr, B>;
 
 }  // namespace neo

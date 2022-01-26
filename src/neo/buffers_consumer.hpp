@@ -26,7 +26,7 @@ public:
     using buffer_type = buffer_range_value_t<BaseRange>;
 
 protected:
-    [[no_unique_address]] wrap_refs_t<BaseRange> _range;
+    [[no_unique_address]] wrap_ref_member_t<BaseRange> _range;
 
     [[no_unique_address]] inner_buffer_iterator _seq_it   = std::begin(unref(_range));
     [[no_unique_address]] inner_buffer_sentinel _seq_stop = std::end(unref(_range));

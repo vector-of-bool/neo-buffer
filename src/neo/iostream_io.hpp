@@ -6,7 +6,7 @@
 
 #include <neo/assert.hpp>
 #include <neo/concepts.hpp>
-#include <neo/ref.hpp>
+#include <neo/ref_member.hpp>
 
 #include <ios>
 
@@ -36,8 +36,8 @@ concept can_buf_ios_write = requires(S s, const_buffer cb) {
  */
 template <typename Stream, dynamic_buffer DynBuffer = shifting_string_buffer>
 class iostream_io {
-    wrap_refs_t<Stream>  _stream;
-    dynbuf_io<DynBuffer> _buffer;
+    wrap_ref_member_t<Stream> _stream;
+    dynbuf_io<DynBuffer>      _buffer;
 
     static constexpr bool is_istream = detail::can_buf_ios_read<Stream>;
     static constexpr bool is_ostream = detail::can_buf_ios_write<Stream>;

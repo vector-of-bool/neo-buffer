@@ -6,18 +6,18 @@
 #include <neo/dynamic_buffer.hpp>
 
 #include <neo/assert.hpp>
-#include <neo/ref.hpp>
+#include <neo/ref_member.hpp>
 
 namespace neo {
 
 template <as_dynamic_buffer_convertible DynBuf>
 class dynbuf_io {
-    [[no_unique_address]] wrap_refs_t<DynBuf> _dyn_buf;
+    [[no_unique_address]] wrap_ref_member_t<DynBuf> _dyn_buf;
 
     std::size_t _read_area_size = as_dynamic_buffer(unref(_dyn_buf)).size();
 
     constexpr std::size_t _get_write_area_size() const noexcept {
-        return as_dynamic_buffer(unref(const_cast<wrap_refs_t<DynBuf>&>(_dyn_buf))).size()
+        return as_dynamic_buffer(unref(const_cast<wrap_ref_member_t<DynBuf>&>(_dyn_buf))).size()
             - _read_area_size;
     }
 
@@ -89,7 +89,7 @@ public:
 };
 
 template <typename T>
-dynbuf_io(T &&) -> dynbuf_io<T>;
+dynbuf_io(T&&) -> dynbuf_io<T>;
 
 template <typename T>
 dynbuf_io(T&&, std::size_t) -> dynbuf_io<T>;

@@ -4,7 +4,7 @@
 #include <neo/buffer_source.hpp>
 
 #include <neo/fwd.hpp>
-#include <neo/ref.hpp>
+#include <neo/ref_member.hpp>
 
 namespace neo {
 
@@ -21,15 +21,15 @@ public:
     using handler_type = std::remove_cvref_t<Handler>;
 
 private:
-    [[no_unique_address]] wrap_refs_t<Bufs>    _bufs;
-    [[no_unique_address]] wrap_refs_t<Handler> _handler;
+    [[no_unique_address]] wrap_ref_member_t<Bufs>    _bufs;
+    [[no_unique_address]] wrap_ref_member_t<Handler> _handler;
 
 public:
     constexpr counting_buffers() = default;
 
     constexpr explicit counting_buffers(Bufs&& s, Handler&& h) noexcept(
-        std::is_nothrow_constructible_v<wrap_refs_t<Bufs>, Bufs>&&
-            std::is_nothrow_constructible_v<wrap_refs_t<Handler>, Handler>)
+        std::is_nothrow_constructible_v<wrap_ref_member_t<Bufs>, Bufs>&&
+            std::is_nothrow_constructible_v<wrap_ref_member_t<Handler>, Handler>)
         : _bufs(NEO_FWD(s))
         , _handler(NEO_FWD(h)) {}
 
@@ -62,6 +62,6 @@ public:
 };
 
 template <typename S, typename H>
-explicit counting_buffers(S&&, H &&) -> counting_buffers<S, H>;
+explicit counting_buffers(S&&, H&&) -> counting_buffers<S, H>;
 
 }  // namespace neo
