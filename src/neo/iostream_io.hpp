@@ -109,10 +109,10 @@ public:
 };
 
 template <typename S, typename B>
-explicit iostream_io(S&&, B &&) -> iostream_io<S, B>;
+explicit iostream_io(S&&, B&&) -> iostream_io<S, B>;
 
 template <typename S>
-explicit iostream_io(S &&) -> iostream_io<S>;
+explicit iostream_io(S&&) -> iostream_io<S>;
 
 /**
  * Read data from an istream into the given buffer range. Expects that the given
@@ -127,7 +127,7 @@ std::size_t buffer_ios_read(std::basic_istream<Char, Traits>& in, Bufs&& bufs) {
                in.eof(),
                in.fail(),
                in.bad(),
-               in.rdstate());
+               int(in.rdstate()));
     std::size_t n_read = 0;
     for (mutable_buffer part : bufs) {
         while (part) {
@@ -164,7 +164,7 @@ std::size_t buffer_ios_write(std::basic_ostream<Char, Traits>& out, Bufs&& bufs)
                out.eof(),
                out.fail(),
                out.bad(),
-               out.rdstate());
+               int(out.rdstate()));
     // We need to use the rdbuf to do the written, since it is the only way (?) to know how many
     // bytes we are actually writing into the stream.
     auto sbuf = out.rdbuf();

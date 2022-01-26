@@ -7,6 +7,8 @@
 
 #include <neo/assert.hpp>
 
+#include <limits>
+
 namespace neo {
 
 /**
@@ -121,7 +123,7 @@ public:
 };
 
 template <typename T>
-buffers_consumer(T &&) -> buffers_consumer<T>;
+buffers_consumer(T&&) -> buffers_consumer<T>;
 
 template <typename T>
 buffers_consumer(T&&, std::size_t) -> buffers_consumer<T>;
@@ -173,7 +175,7 @@ public:
 };
 
 template <typename T>
-buffers_vec_consumer(T &&) -> buffers_vec_consumer<T>;
+buffers_vec_consumer(T&&) -> buffers_vec_consumer<T>;
 
 template <typename T>
 buffers_vec_consumer(T&&, std::size_t) -> buffers_vec_consumer<T>;

@@ -11,6 +11,8 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstring>
+#include <limits>
 
 namespace neo {
 
@@ -44,8 +46,15 @@ ll_buffer_copy_backward(std::byte* dest, const std::byte* src, std::size_t s) no
  * `dest` and `src` must have the same size!
  */
 constexpr void ll_buffer_copy_fast(std::byte* dest, const std::byte* src, std::size_t s) noexcept {
-    /// XXX: Improve with memcpy() when we have is_constant_evaluated()
+#ifdef __cpp_lib_is_constant_evaluated
+    if (std::is_constant_evaluated()) {
+        ll_buffer_copy_forward(dest, src, s);
+    } else {
+        std::memcpy(dest, src, s);
+    }
+#else
     ll_buffer_copy_forward(dest, src, s);
+#endif
 }
 
 /**
