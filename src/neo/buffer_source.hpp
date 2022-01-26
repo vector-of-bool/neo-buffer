@@ -3,8 +3,8 @@
 #include <neo/buffer_range.hpp>
 #include <neo/buffers_consumer.hpp>
 
+#include <neo/declval.hpp>
 #include <neo/fwd.hpp>
-#include <neo/ref.hpp>
 #include <neo/returns.hpp>
 
 namespace neo {
@@ -48,7 +48,7 @@ template <typename T>
 constexpr bool noexcept_buffer_input_v;
 
 template <buffer_input T>
-constexpr bool
-    noexcept_buffer_input_v<T> = noexcept(ensure_buffer_source(ref_v<T>).next(std::size_t(1)));
+constexpr bool noexcept_buffer_input_v<T> = noexcept(
+    ensure_buffer_source(NEO_DECLVAL(T&)).next(std::size_t(1)));
 
 }  // namespace neo

@@ -3,7 +3,7 @@
 #include <neo/as_buffer.hpp>
 
 #include <neo/assert.hpp>
-#include <neo/ref.hpp>
+#include <neo/ref_member.hpp>
 
 namespace neo {
 
@@ -13,7 +13,7 @@ public:
     using storage_type = std::remove_reference_t<Storage>;
 
 private:
-    wrap_refs_t<Storage> _storage;
+    wrap_ref_member_t<Storage> _storage;
 
 public:
     constexpr fixed_dynamic_buffer() = default;
@@ -60,6 +60,6 @@ public:
 };
 
 template <typename T>
-fixed_dynamic_buffer(T &&) -> fixed_dynamic_buffer<T>;
+fixed_dynamic_buffer(T&&) -> fixed_dynamic_buffer<T>;
 
 }  // namespace neo

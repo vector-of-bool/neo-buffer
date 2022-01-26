@@ -3,8 +3,8 @@
 #include <neo/byte_pointer.hpp>
 
 #include <neo/concepts.hpp>
+#include <neo/declval.hpp>
 #include <neo/iterator_concepts.hpp>
-#include <neo/ref.hpp>
 
 #include <iterator>
 #include <type_traits>
@@ -17,14 +17,14 @@ namespace neo {
  * Get the pointer type returned by the std::data of the given container.
  */
 template <typename C>
-using data_pointer_t = decltype(std::data(ref_v<C>));
+using data_pointer_t = decltype(std::data(NEO_DECLVAL(C&)));
 
 /**
  * Get the pointer type returned by the std::data of the given container
  * if it is a `const` instance of said container.
  */
 template <typename C>
-using const_data_pointer_t = decltype(std::data(cref_v<C>));
+using const_data_pointer_t = decltype(std::data(std::as_const(NEO_DECLVAL(C&))));
 
 /**
  * Get the pointer-to-const that corresponds to the data_pointer_t of the given container
@@ -36,7 +36,7 @@ using data_pointer_to_const_t = std::add_pointer_t<std::add_const_t<std::remove_
  * Get the value type of the container.
  */
 template <typename C>
-using data_type_t = iter_value_t<data_pointer_t<C>>;
+using data_type_t = std::iter_value_t<data_pointer_t<C>>;
 
 /**
  * Get the size of the value type of the contaienr.

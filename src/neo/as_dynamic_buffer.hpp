@@ -55,7 +55,7 @@ public:
     using container_type = std::remove_cvref_t<Container>;
 
 private:
-    wrap_refs_t<Container> _container;
+    wrap_ref_member_t<Container> _container;
 
 public:
     constexpr dynamic_buffer_byte_container_adaptor() = default;
@@ -134,7 +134,7 @@ public:
 };
 
 template <typename T>
-explicit dynamic_buffer_byte_container_adaptor(T &&) -> dynamic_buffer_byte_container_adaptor<T>;
+explicit dynamic_buffer_byte_container_adaptor(T&&) -> dynamic_buffer_byte_container_adaptor<T>;
 
 namespace cpo {
 inline constexpr struct as_dynamic_buffer_fn {

@@ -5,14 +5,8 @@
 #include <neo/mutable_buffer.hpp>
 
 #include <neo/concepts.hpp>
-#include <neo/fwd.hpp>
-#include <neo/iterator_concepts.hpp>
-#include <neo/platform.hpp>
-#include <neo/ref.hpp>
 
-#include <iterator>
-#include <type_traits>
-#include <utility>
+#include <ranges>
 
 namespace neo {
 
@@ -23,28 +17,26 @@ namespace neo {
  */
 template <typename T>
 concept buffer_range =
-    requires(T& t) {
-        { std::begin(t) } -> buffer_iterator;
-        { std::end(t) } -> sentinel_for<decltype(std::begin(t))>;
-    };
+    std::ranges::input_range<T> &&
+    buffer_iterator<std::ranges::iterator_t<T>>;
 
 /**
  * Obtain the iterator type of the given buffer range
  */
 template <buffer_range T>
-using buffer_range_iterator_t = decltype(std::begin(ref_v<T>));
+using buffer_range_iterator_t = std::ranges::iterator_t<T>;
 
 /**
  * Obtain the sentinel type of the given buffer range
  */
 template <buffer_range T>
-using buffer_range_sentinel_t = decltype(std::end(ref_v<T>));
+using buffer_range_sentinel_t = std::ranges::sentinel_t<T>;
 
 /**
  * Obtain the buffer type (value type) of the given buffer range.
  */
 template <buffer_range T>
-using buffer_range_value_t = iter_value_t<buffer_range_iterator_t<T>>;
+using buffer_range_value_t = std::ranges::range_value_t<T>;
 
 /**
  * A range whose iterators model mutable_buffer_iterator. That is: The range's

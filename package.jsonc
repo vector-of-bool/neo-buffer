@@ -1,9 +1,9 @@
 {
     "name": "neo-buffer",
-    "version": "0.5.1",
+    "version": "0.5.2",
     "namespace": "neo",
     "test_driver": "Catch-Main",
     "depends": [
-        "neo-fun^0.7.0"
+        "neo-fun^0.11.1"
     ]
 }
